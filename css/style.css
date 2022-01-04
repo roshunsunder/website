@@ -157,12 +157,12 @@ body {
 }
 
 ::-moz-selection {
-  background: #542cb7;
+  background: #1b3752;
   color: #fff;
 }
 
 ::selection {
-  background: #542cb7;
+  background: #1b3752;
   color: #fff;
 }
 
@@ -210,11 +210,11 @@ select:focus {
 }
 
 a.text-dark:hover {
-  color: #41228e !important;
+  color: #5CDB95 !important;
 }
 
 a:hover {
-  color: #41228e;
+  color: #5CDB95;
 }
 
 .slick-slide {
@@ -419,15 +419,28 @@ textarea.form-control {
 }
 
 /* /form */
+/* blogs */
+.row-centered {
+  text-align: center;
+}
 /* card */
 .card {
   border: 0;
+  border-radius: 0 !important;
 }
 .card-header {
   border: 0;
 }
 .card-footer {
   border: 0;
+}
+
+.big-card-title {
+  font-size: xx-large;
+}
+
+.card-img-top {
+  border-radius: 0% !important;
 }
 
 /* /card */
