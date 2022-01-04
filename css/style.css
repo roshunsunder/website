@@ -451,6 +451,14 @@ textarea.form-control {
   border-radius: 0% !important;
 }
 
+.shrink {
+  transition: all 0.3s ease-in-out;
+}
+
+.shrink:hover {
+  transform: scale(0.975);
+}
+
 /* /card */
 .navigation {
   padding: 40px 130px;
@@ -468,7 +476,7 @@ textarea.form-control {
 @media (max-width: 991px) {
   .navigation {
     padding: 20px;
-    background: #41228e;
+    background: #1b3752;
   }
 }
 
