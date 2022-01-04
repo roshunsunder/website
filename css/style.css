@@ -439,6 +439,10 @@ textarea.form-control {
   font-size: xx-large;
 }
 
+.big-card-text {
+  font-size: large;
+}
+
 .card-img-top {
   border-radius: 0% !important;
 }
