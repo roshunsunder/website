@@ -375,6 +375,10 @@ a:hover {
   color: #c8d5ef;
 }
 
+.force{
+  width: auto !important;
+  height: auto !important;
+}
 /* /icon */
 /* slick slider */
 .slick-dots {
