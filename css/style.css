@@ -359,6 +359,10 @@ a:hover {
   background-color: #222222 !important;
 }
 
+.bg-transparent {
+  background-color: transparent !important;
+}
+
 /* icon */
 .icon {
   font-size: 45px;
@@ -371,8 +375,19 @@ a:hover {
   text-align: center;
 }
 
+.icon-bg-2 {
+  height: 100px;
+  width: 100px;
+  line-height: 100px;
+  text-align: center;
+}
+
 .icon-light {
   color: #c8d5ef;
+}
+
+.icon-img {
+  object-fit: contain;
 }
 
 .force{
@@ -457,6 +472,14 @@ textarea.form-control {
 
 .shrink:hover {
   transform: scale(0.975);
+}
+
+.shrink-icon {
+  transition: all 0.3s ease-in-out;
+}
+
+.shrink-icon:hover {
+  transform: scale(0.9);
 }
 
 /* /card */
