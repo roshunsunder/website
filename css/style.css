@@ -1,25 +1,3 @@
-/**
- * WEBSITE: https://themefisher.com
- * TWITTER: https://twitter.com/themefisher
- * FACEBOOK: https://www.facebook.com/themefisher
- * GITHUB: https://github.com/themefisher/
- */
-
-/*!
-THEME: Kross - Creative Portfolio Template
-VERSION: 1.0.0
-AUTHOR: Themefisher
-
-HOMEPAGE: https://themefisher.com/products/kross-creative-portfolio-template/
-DEMO: https://demo.themefisher.com/kross/
-GITHUB: https://github.com/themefisher/meghna-onepage-html5-business-template
-
-Get HUGO Version : https://gethugothemes.com/products/kross-hugo-theme/
-
-WEBSITE: https://themefisher.com
-TWITTER: https://twitter.com/themefisher
-FACEBOOK: https://www.facebook.com/themefisher
-*/
 /*  typography */
 @import url("https://fonts.googleapis.com/css?family=Playfair+Display:700|Roboto:400");
 body {
@@ -390,6 +368,16 @@ a:hover {
   object-fit: contain;
 }
 
+.tiny-icon {
+  height: 30px !important;
+  width:auto !important;
+}
+
+.position-social {
+  position: absolute !important;
+  left: 0 !important;
+  bottom: 0 !important;
+}
 .force{
   width: auto !important;
   height: auto !important;
@@ -517,7 +505,9 @@ textarea.form-control {
 }
 
 .hero-area {
-  padding: 300px 0 200px;
+  padding: 300px 0 10px;
+  height: 900px;
+  width: auto;
   position: relative;
 }
 @media (max-width: 767px) {
@@ -917,5 +907,9 @@ blockquote {
 }
 .filter-controls li.active {
   font-weight: bold;
+}
+
+.send-button {
+  color: #fff;
 }
 /*# sourceMappingURL=style.css.map */
