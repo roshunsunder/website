@@ -10,9 +10,9 @@ function Earth() {
 function App() {
   return (
     <div className="canvas-container">
-      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+      <Canvas camera={{ position: [0, 0, 75], fov: 50 }}>
         <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
+        <directionalLight position={[10, 10, 5]} intensity={4} />
         <Earth />
         <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
       </Canvas>
