@@ -56,6 +56,42 @@ function Satellite() {
   )
 }
 
+function SpaceShuttle() {
+  const { scene } = useGLTF('/models/low-poly_space_shuttle.glb')
+  const orbitGroupRef = useRef<Group>(null)
+  const shuttleGroupRef = useRef<Group>(null)
+  const angleRef = useRef(0) // Start at 0 degrees (in radians)
+  const orbitRadius = 12 // Different radius than satellite
+  const orbitSpeed = 0.2 // Slower orbit speed
+  const shuttleScale = 0.003
+  const orbitTiltX = -1.5 // Different tilt angle
+
+  useFrame((_, delta) => {
+    if (!orbitGroupRef.current || !shuttleGroupRef.current) return
+    angleRef.current += delta * orbitSpeed
+    
+    // Calculate circular orbit position
+    const x = Math.cos(angleRef.current) * orbitRadius
+    const z = Math.sin(angleRef.current) * orbitRadius
+    
+    // Apply orbital plane tilt
+    orbitGroupRef.current.position.x = x
+    orbitGroupRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitGroupRef.current.position.z = Math.cos(orbitTiltX) * z
+    
+    // Rotate the shuttle to face direction of travel
+    shuttleGroupRef.current.rotation.y = Math.atan2(x, z) + Math.PI / 2
+  })
+
+  return (
+    <group ref={orbitGroupRef}>
+      <group ref={shuttleGroupRef} scale={shuttleScale}>
+        <primitive object={scene} />
+      </group>
+    </group>
+  )
+}
+
 function App() {
   return (
     <div className="canvas-container">
@@ -64,6 +100,7 @@ function App() {
         <Environment preset="studio" background={false} />
         <Earth />
         <Satellite />
+        <SpaceShuttle />
         <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
       </Canvas>
     </div>
