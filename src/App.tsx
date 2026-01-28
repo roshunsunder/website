@@ -1,11 +1,11 @@
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls, Stars, useGLTF } from '@react-three/drei'
-import { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import type { Group } from 'three'
 import * as THREE from 'three'
 import './App.css'
 
-function Earth() {
+function Earth({ onClick }: { onClick: () => void }) {
   const { scene } = useGLTF('/models/scene.glb')
   const groupRef = useRef<Group>(null)
 
@@ -15,15 +15,14 @@ function Earth() {
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} onClick={onClick}>
       <primitive object={scene} />
     </group>
   )
 }
 
-function Satellite() {
+function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React.RefObject<Group | null> }) {
   const { scene } = useGLTF('/models/low_poly_satellite.glb')
-  const orbitGroupRef = useRef<Group>(null)
   const satelliteGroupRef = useRef<Group>(null)
   const angleRef = useRef(Math.PI / 4) // Start at 45 degrees (in radians)
   const orbitRadius = 15
@@ -32,7 +31,7 @@ function Satellite() {
   const orbitTiltX = 2 // Tilt orbit plane around X axis (in radians)
 
   useFrame((_, delta) => {
-    if (!orbitGroupRef.current || !satelliteGroupRef.current) return
+    if (!orbitRef.current || !satelliteGroupRef.current) return
     angleRef.current += delta * orbitSpeed
     
     // Calculate circular orbit position
@@ -40,16 +39,21 @@ function Satellite() {
     const z = Math.sin(angleRef.current) * orbitRadius
     
     // Apply orbital plane tilt
-    orbitGroupRef.current.position.x = x
-    orbitGroupRef.current.position.y = Math.sin(orbitTiltX) * z
-    orbitGroupRef.current.position.z = Math.cos(orbitTiltX) * z
+    orbitRef.current.position.x = x
+    orbitRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitRef.current.position.z = Math.cos(orbitTiltX) * z
     
     // Rotate the satellite itself
     satelliteGroupRef.current.rotation.y += delta * 0.5
   })
 
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    onClick()
+  }
+
   return (
-    <group ref={orbitGroupRef}>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); (e.target as HTMLElement).style.cursor = 'pointer' }} onPointerOut={(e) => { (e.target as HTMLElement).style.cursor = 'auto' }}>
       <group ref={satelliteGroupRef} scale={satelliteScale}>
         <primitive object={scene} />
       </group>
@@ -57,9 +61,8 @@ function Satellite() {
   )
 }
 
-function SpaceShuttle() {
+function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: React.RefObject<Group | null> }) {
   const { scene } = useGLTF('/models/low-poly_space_shuttle.glb')
-  const orbitGroupRef = useRef<Group>(null)
   const shuttleGroupRef = useRef<Group>(null)
   const angleRef = useRef(0) // Start at 0 degrees (in radians)
   const orbitRadius = 10 // Different radius than satellite
@@ -69,7 +72,7 @@ function SpaceShuttle() {
   const targetQuaternion = useRef(new THREE.Quaternion())
 
   useFrame((_, delta) => {
-    if (!orbitGroupRef.current || !shuttleGroupRef.current) return
+    if (!orbitRef.current || !shuttleGroupRef.current) return
     angleRef.current += delta * orbitSpeed
     
     // Calculate circular orbit position
@@ -77,12 +80,12 @@ function SpaceShuttle() {
     const z = Math.sin(angleRef.current) * orbitRadius
     
     // Apply orbital plane tilt
-    orbitGroupRef.current.position.x = x
-    orbitGroupRef.current.position.y = Math.sin(orbitTiltX) * z
-    orbitGroupRef.current.position.z = Math.cos(orbitTiltX) * z
+    orbitRef.current.position.x = x
+    orbitRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitRef.current.position.z = Math.cos(orbitTiltX) * z
     
     // Make shuttle's bottom face Earth (center) - smooth rotation using quaternions
-    const shuttlePos = orbitGroupRef.current.position.clone()
+    const shuttlePos = orbitRef.current.position.clone()
     const directionToEarth = new THREE.Vector3(0, 0, 0).sub(shuttlePos).normalize()
     
     // Calculate right vector (tangent to orbit, pointing in direction of motion)
@@ -114,8 +117,13 @@ function SpaceShuttle() {
     shuttleGroupRef.current.quaternion.slerp(targetQuaternion.current, 0.15)
   })
 
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    onClick()
+  }
+
   return (
-    <group ref={orbitGroupRef}>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); (e.target as HTMLElement).style.cursor = 'pointer' }} onPointerOut={(e) => { (e.target as HTMLElement).style.cursor = 'auto' }}>
       <group ref={shuttleGroupRef} scale={shuttleScale}>
         <primitive object={scene} />
       </group>
@@ -123,16 +131,121 @@ function SpaceShuttle() {
   )
 }
 
+function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: React.RefObject<Group | null>, isFollowing: boolean, controlsRef: React.RefObject<any> }) {
+  const { camera } = useThree()
+  const targetPosition = useRef(new THREE.Vector3())
+  const targetLookAt = useRef(new THREE.Vector3())
+  const isTransitioning = useRef(false)
+  const transitionProgress = useRef(0)
+  const startPosition = useRef(new THREE.Vector3())
+
+  useFrame((_, delta) => {
+    if (controlsRef.current) {
+      controlsRef.current.enabled = !isFollowing
+    }
+
+    if (!targetRef.current || !isFollowing) {
+      if (isTransitioning.current) {
+        isTransitioning.current = false
+        transitionProgress.current = 0
+      }
+      return
+    }
+
+    const targetPos = targetRef.current.position
+    const distance = 5 // Distance from object for close-up
+    
+    // Calculate direction from Earth (center) to object
+    const directionFromEarth = targetPos.clone().normalize()
+    
+    // Position camera on the opposite side of object from Earth
+    // So Earth will be in the background when looking at the object
+    targetPosition.current.copy(targetPos).add(directionFromEarth.multiplyScalar(distance))
+    
+    // Camera should look at the object (Earth will be in background)
+    targetLookAt.current.copy(targetPos)
+
+    if (!isTransitioning.current) {
+      // Start transition - save current position
+      isTransitioning.current = true
+      transitionProgress.current = 0
+      startPosition.current.copy(camera.position)
+    }
+
+    // Smooth transition
+    transitionProgress.current = Math.min(transitionProgress.current + delta * 2, 1)
+    const t = transitionProgress.current
+    const smoothT = t * t * (3 - 2 * t) // Smoothstep interpolation
+
+    // Lerp camera position from start to target
+    camera.position.lerpVectors(startPosition.current, targetPosition.current, smoothT)
+    
+    // Make camera look at target
+    camera.lookAt(targetLookAt.current)
+    
+    // Update controls target
+    if (controlsRef.current) {
+      controlsRef.current.target.lerp(targetLookAt.current, smoothT)
+      controlsRef.current.update()
+    }
+  })
+
+  return null
+}
+
 function App() {
+  const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | null>(null)
+  const satelliteRef = useRef<Group>(null)
+  const shuttleRef = useRef<Group>(null)
+  const controlsRef = useRef<any>(null)
+
+  const handleSatelliteClick = () => {
+    // Toggle selection - if already selected, deselect
+    setSelectedObject(selectedObject === 'satellite' ? null : 'satellite')
+  }
+
+  const handleShuttleClick = () => {
+    // Toggle selection - if already selected, deselect
+    setSelectedObject(selectedObject === 'shuttle' ? null : 'shuttle')
+  }
+
+  const handleEarthClick = () => {
+    // Clicking Earth deselects any selected object
+    setSelectedObject(null)
+  }
+
+  const handleControlsStart = () => {
+    // If user manually controls camera, stop following
+    if (selectedObject) {
+      setSelectedObject(null)
+    }
+  }
+
+  const handleCanvasClick = (e: any) => {
+    // Clicking on empty space (not on an object) deselects
+    if (e.target === e.currentTarget) {
+      setSelectedObject(null)
+    }
+  }
+
+  const targetRef = selectedObject === 'satellite' ? satelliteRef : selectedObject === 'shuttle' ? shuttleRef : null
+
   return (
     <div className="canvas-container">
-      <Canvas camera={{ position: [0, 0, 75], fov: 50 }} gl={{ toneMappingExposure: 0.5 }}>
+      <Canvas camera={{ position: [0, 0, 75], fov: 50 }} gl={{ toneMappingExposure: 0.5 }} onClick={handleCanvasClick}>
         <Stars radius={300} depth={60} count={5000} factor={13} saturation={0} fade speed={0} />
         <Environment preset="studio" background={false} />
-        <Earth />
-        <Satellite />
-        <SpaceShuttle />
-        <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
+        <Earth onClick={handleEarthClick} />
+        <Satellite onClick={handleSatelliteClick} orbitRef={satelliteRef} />
+        <SpaceShuttle onClick={handleShuttleClick} orbitRef={shuttleRef} />
+        <OrbitControls 
+          ref={controlsRef}
+          enableZoom={true} 
+          enablePan={true} 
+          enableRotate={true}
+          onStart={handleControlsStart}
+        />
+        {targetRef && <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />}
       </Canvas>
     </div>
   )
