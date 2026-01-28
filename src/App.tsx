@@ -20,6 +20,33 @@ function Earth() {
   )
 }
 
+function Satellite() {
+  const { scene } = useGLTF('/models/low_poly_satellite.glb')
+  const groupRef = useRef<Group>(null)
+  const angleRef = useRef(0)
+  const orbitRadius = 30
+  const orbitSpeed = 0.3
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+    angleRef.current += delta * orbitSpeed
+    
+    // Calculate circular orbit position
+    groupRef.current.position.x = Math.cos(angleRef.current) * orbitRadius
+    groupRef.current.position.z = Math.sin(angleRef.current) * orbitRadius
+    groupRef.current.position.y = 0
+    
+    // Optionally rotate the satellite itself
+    groupRef.current.rotation.y += delta * 0.5
+  })
+
+  return (
+    <group ref={groupRef}>
+      <primitive object={scene} />
+    </group>
+  )
+}
+
 function App() {
   return (
     <div className="canvas-container">
@@ -27,6 +54,7 @@ function App() {
         <Stars radius={300} depth={60} count={5000} factor={13} saturation={0} fade speed={0} />
         <Environment preset="studio" background={false} />
         <Earth />
+        <Satellite />
         <OrbitControls enableZoom={true} enablePan={true} enableRotate={true} />
       </Canvas>
     </div>
