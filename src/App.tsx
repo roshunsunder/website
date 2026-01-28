@@ -131,24 +131,33 @@ function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: Re
   )
 }
 
-function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: React.RefObject<Group | null>, isFollowing: boolean, controlsRef: React.RefObject<any> }) {
+function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: React.RefObject<Group | null> | null, isFollowing: boolean, controlsRef: React.RefObject<any> }) {
   const { camera } = useThree()
   const targetPosition = useRef(new THREE.Vector3())
   const targetLookAt = useRef(new THREE.Vector3())
   const isTransitioning = useRef(false)
   const transitionProgress = useRef(0)
   const startPosition = useRef(new THREE.Vector3())
+  const wasFollowing = useRef(false)
 
   useFrame((_, delta) => {
+    // Detect when we STOP following
+    if (wasFollowing.current && !isFollowing) {
+      // Reset OrbitControls target back to Earth (center)
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0)
+        controlsRef.current.update()
+      }
+      isTransitioning.current = false
+      transitionProgress.current = 0
+    }
+    wasFollowing.current = isFollowing
+
     if (controlsRef.current) {
       controlsRef.current.enabled = !isFollowing
     }
 
-    if (!targetRef.current || !isFollowing) {
-      if (isTransitioning.current) {
-        isTransitioning.current = false
-        transitionProgress.current = 0
-      }
+    if (!targetRef?.current || !isFollowing) {
       return
     }
 
@@ -245,7 +254,7 @@ function App() {
           enableRotate={true}
           onStart={handleControlsStart}
         />
-        {targetRef && <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />}
+        <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
       </Canvas>
     </div>
   )
