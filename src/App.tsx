@@ -24,8 +24,9 @@ function Satellite() {
   const { scene } = useGLTF('/models/low_poly_satellite.glb')
   const groupRef = useRef<Group>(null)
   const angleRef = useRef(0)
-  const orbitRadius = 30
+  const orbitRadius = 15
   const orbitSpeed = 0.3
+  const satelliteScale = 0.2
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
@@ -41,7 +42,7 @@ function Satellite() {
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} scale={satelliteScale}>
       <primitive object={scene} />
     </group>
   )
