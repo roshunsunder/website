@@ -1,10 +1,23 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import { Environment, OrbitControls, Stars, useGLTF } from '@react-three/drei'
+import { useRef } from 'react'
+import type { Group } from 'three'
 import './App.css'
 
 function Earth() {
   const { scene } = useGLTF('/models/scene.glb')
-  return <primitive object={scene} />
+  const groupRef = useRef<Group>(null)
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+    groupRef.current.rotation.y += delta * 0.15
+  })
+
+  return (
+    <group ref={groupRef}>
+      <primitive object={scene} />
+    </group>
+  )
 }
 
 function App() {
