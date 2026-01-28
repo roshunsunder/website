@@ -22,28 +22,36 @@ function Earth() {
 
 function Satellite() {
   const { scene } = useGLTF('/models/low_poly_satellite.glb')
-  const groupRef = useRef<Group>(null)
-  const angleRef = useRef(0)
+  const orbitGroupRef = useRef<Group>(null)
+  const satelliteGroupRef = useRef<Group>(null)
+  const angleRef = useRef(Math.PI / 4) // Start at 45 degrees (in radians)
   const orbitRadius = 15
   const orbitSpeed = 0.3
   const satelliteScale = 0.2
+  const orbitTiltX = 2 // Tilt orbit plane around X axis (in radians)
 
   useFrame((_, delta) => {
-    if (!groupRef.current) return
+    if (!orbitGroupRef.current || !satelliteGroupRef.current) return
     angleRef.current += delta * orbitSpeed
     
     // Calculate circular orbit position
-    groupRef.current.position.x = Math.cos(angleRef.current) * orbitRadius
-    groupRef.current.position.z = Math.sin(angleRef.current) * orbitRadius
-    groupRef.current.position.y = 0
+    const x = Math.cos(angleRef.current) * orbitRadius
+    const z = Math.sin(angleRef.current) * orbitRadius
     
-    // Optionally rotate the satellite itself
-    groupRef.current.rotation.y += delta * 0.5
+    // Apply orbital plane tilt
+    orbitGroupRef.current.position.x = x
+    orbitGroupRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitGroupRef.current.position.z = Math.cos(orbitTiltX) * z
+    
+    // Rotate the satellite itself
+    satelliteGroupRef.current.rotation.y += delta * 0.5
   })
 
   return (
-    <group ref={groupRef} scale={satelliteScale}>
-      <primitive object={scene} />
+    <group ref={orbitGroupRef}>
+      <group ref={satelliteGroupRef} scale={satelliteScale}>
+        <primitive object={scene} />
+      </group>
     </group>
   )
 }
