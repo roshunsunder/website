@@ -41,7 +41,6 @@ function HoverPill({
 }) {
   const pillRef = useRef<THREE.Group>(null)
   const { camera } = useThree()
-  const scrollOffset = useRef(0)
   const opacityRef = useRef(0)
   const timeoutRef = useRef<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
@@ -71,9 +70,8 @@ function HoverPill({
     }
 
     if (isHovered) {
-      // Reset scroll and fade in when hovered
-      scrollOffset.current = 0
-      opacityRef.current = 1
+      // Fade in when hovered
+      opacityRef.current = 0 // Start at 0 for fade-in
       setIsVisible(true)
       
       // Clear any existing timeout
@@ -109,9 +107,8 @@ function HoverPill({
     // Calculate direction from Earth (origin) to object
     const direction = objectPos.clone().normalize()
     
-    // Scroll out animation - move further from Earth along the same line
+    // Fade in/out animation
     if (isHovered) {
-      scrollOffset.current = Math.min(scrollOffset.current + delta * 2, 2)
       opacityRef.current = Math.min(opacityRef.current + delta * 3, 1)
     } else {
       // Fade out after hover ends
@@ -123,8 +120,7 @@ function HoverPill({
 
     // Position pill on opposite side of Earth from object
     // Line: Earth (0,0,0) -> Object -> Pill
-    const distanceFromObject = distance + scrollOffset.current
-    const pillPosition = objectPos.clone().add(direction.multiplyScalar(distanceFromObject))
+    const pillPosition = objectPos.clone().add(direction.multiplyScalar(distance))
     pillRef.current.position.copy(pillPosition)
 
     // Update pill and text opacity
