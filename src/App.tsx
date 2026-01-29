@@ -299,7 +299,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
         </group>
       </group>
       <HoverPill 
-        text="Syngery Interview" 
+        text="Synergy Interview" 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
