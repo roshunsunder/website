@@ -189,7 +189,7 @@ function EarthGlow({ earthRadius = 6 }: { earthRadius?: number }) {
   const glowMaterial = useMemo(() => {
     return new THREE.ShaderMaterial({
       uniforms: {
-        glowColor: { value: new THREE.Color(0x4a9eff) }, // Brighter blue
+        glowColor: { value: new THREE.Color(0x9DC2F2) }, // Brighter blue
         intensity: { value: 0.6 }, // More visible
         falloff: { value: 2.0 }, // Slightly more diffuse
       },
