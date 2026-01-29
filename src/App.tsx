@@ -44,6 +44,7 @@ function HoverPill({
   const opacityRef = useRef(0)
   const timeoutRef = useRef<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  const wasVisible = useRef(false)
   
   // Estimate text width based on character count (monospaced font)
   const textWidth = useMemo(() => text.length * 0.6, [text])
@@ -59,9 +60,9 @@ function HoverPill({
   }, [pillWidth, pillHeight, pillRadius])
 
   useEffect(() => {
-    // If selected, immediately hide and don't show on hover
     if (isSelected) {
       setIsVisible(false)
+      wasVisible.current = false
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
@@ -70,19 +71,24 @@ function HoverPill({
     }
 
     if (isHovered) {
-      // Fade in when hovered
-      opacityRef.current = 0 // Start at 0 for fade-in
-      setIsVisible(true)
-      
-      // Clear any existing timeout
+      // Clear any pending hide timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
       }
-    } else {
-      // When hover ends, wait 3 seconds before hiding
+      
+      // Only reset opacity if we're not already visible
+      if (!wasVisible.current) {
+        opacityRef.current = 0
+      }
+      
+      setIsVisible(true)
+      wasVisible.current = true
+    } else if (wasVisible.current) {
+      // Only start fade-out timer if we were visible
       timeoutRef.current = setTimeout(() => {
         setIsVisible(false)
+        wasVisible.current = false
         onHoverEnd()
       }, 3000)
     }
