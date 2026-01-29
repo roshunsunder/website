@@ -53,7 +53,7 @@ function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React
   }
 
   return (
-    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); (e.target as HTMLElement).style.cursor = 'pointer' }} onPointerOut={(e) => { (e.target as HTMLElement).style.cursor = 'auto' }}>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = 'auto' }}>
       <group ref={satelliteGroupRef} scale={satelliteScale}>
         <primitive object={scene} />
       </group>
@@ -123,7 +123,7 @@ function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: Re
   }
 
   return (
-    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); (e.target as HTMLElement).style.cursor = 'pointer' }} onPointerOut={(e) => { (e.target as HTMLElement).style.cursor = 'auto' }}>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = 'auto' }}>
       <group ref={shuttleGroupRef} scale={shuttleScale}>
         <primitive object={scene} />
       </group>
@@ -162,14 +162,27 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
     }
 
     const targetPos = targetRef.current.position
-    const distance = 5 // Distance from object for close-up
+    const distance = 12 // Distance from object for close-up
     
     // Calculate direction from Earth (center) to object
     const directionFromEarth = targetPos.clone().normalize()
     
-    // Position camera on the opposite side of object from Earth
+    // Calculate camera's right and up vectors for offsetting
+    // We want the object to appear in the bottom-left of the screen
+    // So we offset the camera to the right and up relative to the object
+    const cameraForward = directionFromEarth.clone().negate() // Camera looks toward object (opposite of direction from Earth)
+    const worldUp = new THREE.Vector3(0, 1, 0)
+    const cameraRight = new THREE.Vector3().crossVectors(cameraForward, worldUp).normalize()
+    const cameraUp = new THREE.Vector3().crossVectors(cameraRight, cameraForward).normalize()
+    
+    // Offset to position object in bottom-left: move camera right and up
+    const offsetRight = cameraRight.clone().multiplyScalar(4) // Offset camera to the right
+    const offsetUp = cameraUp.clone().multiplyScalar(3) // Offset camera upward
+    
+    // Position camera on the opposite side of object from Earth, with offset
     // So Earth will be in the background when looking at the object
-    targetPosition.current.copy(targetPos).add(directionFromEarth.multiplyScalar(distance))
+    const basePosition = targetPos.clone().add(directionFromEarth.multiplyScalar(distance))
+    targetPosition.current.copy(basePosition).add(offsetRight).add(offsetUp)
     
     // Camera should look at the object (Earth will be in background)
     targetLookAt.current.copy(targetPos)
@@ -182,7 +195,7 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
     }
 
     // Smooth transition
-    transitionProgress.current = Math.min(transitionProgress.current + delta * 2, 1)
+    transitionProgress.current = Math.min(transitionProgress.current + delta * 0.6, 1)
     const t = transitionProgress.current
     const smoothT = t * t * (3 - 2 * t) // Smoothstep interpolation
 
