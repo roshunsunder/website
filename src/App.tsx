@@ -516,7 +516,7 @@ function App() {
 
   return (
     <div className="canvas-container">
-      <Canvas camera={{ position: [0, 0, 50], fov: 50 }} gl={{ toneMappingExposure: 0.5 }} onClick={handleCanvasClick}>
+      <Canvas camera={{ position: [0, 0, 45], fov: 50 }} gl={{ toneMappingExposure: 0.5 }} onClick={handleCanvasClick}>
         <Stars radius={300} depth={60} count={5000} factor={13} saturation={0} fade speed={0} />
         <Environment preset="studio" background={false} />
         <Earth onClick={handleEarthClick} />
