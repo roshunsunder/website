@@ -1,9 +1,115 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, OrbitControls, Stars, useGLTF } from '@react-three/drei'
-import React, { useRef, useState } from 'react'
+import { Environment, OrbitControls, Stars, useGLTF, Text } from '@react-three/drei'
+import React, { useRef, useState, useEffect } from 'react'
 import type { Group } from 'three'
 import * as THREE from 'three'
 import './App.css'
+
+function HoverText({ 
+  text, 
+  objectRef, 
+  isHovered, 
+  onHoverEnd 
+}: { 
+  text: string
+  objectRef: React.RefObject<Group | null>
+  isHovered: boolean
+  onHoverEnd: () => void
+}) {
+  const textRef = useRef<THREE.Group>(null)
+  const { camera } = useThree()
+  const scrollOffset = useRef(0)
+  const opacityRef = useRef(0)
+  const timeoutRef = useRef<number | null>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    if (isHovered) {
+      // Reset scroll and fade in when hovered
+      scrollOffset.current = 0
+      opacityRef.current = 1
+      setIsVisible(true)
+      
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    } else {
+      // When hover ends, wait 3 seconds before hiding
+      timeoutRef.current = setTimeout(() => {
+        setIsVisible(false)
+        onHoverEnd()
+      }, 3000)
+    }
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [isHovered, onHoverEnd])
+
+  useFrame((_, delta) => {
+    if (!textRef.current || !objectRef.current || !isVisible) return
+
+    // Make text always face the camera (billboard effect)
+    textRef.current.lookAt(camera.position)
+
+    // Update position to follow the object
+    const worldPosition = new THREE.Vector3()
+    objectRef.current.getWorldPosition(worldPosition)
+    
+    // Scroll out animation - move upward and outward
+    if (isHovered) {
+      scrollOffset.current = Math.min(scrollOffset.current + delta * 2, 3)
+      opacityRef.current = Math.min(opacityRef.current + delta * 3, 1)
+    } else {
+      // Fade out after hover ends
+      opacityRef.current = Math.max(opacityRef.current - delta * 0.5, 0)
+      if (opacityRef.current <= 0) {
+        setIsVisible(false)
+      }
+    }
+
+    // Position text above and slightly in front of the object
+    const offsetY = 2 + scrollOffset.current
+    const offsetZ = scrollOffset.current * 0.5
+    textRef.current.position.copy(worldPosition)
+    textRef.current.position.y += offsetY
+    textRef.current.position.z += offsetZ
+
+    // Update text opacity
+    if (textRef.current.children[0]) {
+      const textMesh = textRef.current.children[0] as THREE.Mesh
+      if (textMesh.material) {
+        const material = textMesh.material as THREE.MeshStandardMaterial
+        material.opacity = opacityRef.current
+        material.transparent = true
+      }
+    }
+  })
+
+  if (!isVisible) {
+    return null
+  }
+
+  return (
+    <group ref={textRef}>
+      <Text
+        fontSize={1.5}
+        color="#ffffff"
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.1}
+        outlineColor="#000000"
+        renderOrder={1000}
+      >
+        {text}
+      </Text>
+    </group>
+  )
+}
 
 function Earth({ onClick }: { onClick: () => void }) {
   const { scene } = useGLTF('/models/scene.glb')
@@ -24,6 +130,7 @@ function Earth({ onClick }: { onClick: () => void }) {
 function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React.RefObject<Group | null> }) {
   const { scene } = useGLTF('/models/low_poly_satellite.glb')
   const satelliteGroupRef = useRef<Group>(null)
+  const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(Math.PI / 4) // Start at 45 degrees (in radians)
   const orbitRadius = 15
   const orbitSpeed = 0.3
@@ -52,18 +159,38 @@ function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React
     onClick()
   }
 
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation()
+    document.body.style.cursor = 'pointer'
+    setIsHovered(true)
+  }
+
+  const handlePointerOut = () => {
+    document.body.style.cursor = 'auto'
+    setIsHovered(false)
+  }
+
   return (
-    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = 'auto' }}>
-      <group ref={satelliteGroupRef} scale={satelliteScale}>
-        <primitive object={scene} />
+    <>
+      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+        <group ref={satelliteGroupRef} scale={satelliteScale}>
+          <primitive object={scene} />
+        </group>
       </group>
-    </group>
+      <HoverText 
+        text="Satellite" 
+        objectRef={orbitRef} 
+        isHovered={isHovered}
+        onHoverEnd={() => setIsHovered(false)}
+      />
+    </>
   )
 }
 
 function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: React.RefObject<Group | null> }) {
   const { scene } = useGLTF('/models/low-poly_space_shuttle.glb')
   const shuttleGroupRef = useRef<Group>(null)
+  const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(0) // Start at 0 degrees (in radians)
   const orbitRadius = 10 // Different radius than satellite
   const orbitSpeed = 0.2 // Slower orbit speed
@@ -122,12 +249,31 @@ function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: Re
     onClick()
   }
 
+  const handlePointerOver = (e: any) => {
+    e.stopPropagation()
+    document.body.style.cursor = 'pointer'
+    setIsHovered(true)
+  }
+
+  const handlePointerOut = () => {
+    document.body.style.cursor = 'auto'
+    setIsHovered(false)
+  }
+
   return (
-    <group ref={orbitRef} onClick={handleClick} onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = 'auto' }}>
-      <group ref={shuttleGroupRef} scale={shuttleScale}>
-        <primitive object={scene} />
+    <>
+      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+        <group ref={shuttleGroupRef} scale={shuttleScale}>
+          <primitive object={scene} />
+        </group>
       </group>
-    </group>
+      <HoverText 
+        text="Space Shuttle" 
+        objectRef={orbitRef} 
+        isHovered={isHovered}
+        onHoverEnd={() => setIsHovered(false)}
+      />
+    </>
   )
 }
 
