@@ -1,5 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls, Stars, useGLTF, Text } from '@react-three/drei'
+
 import React, { useRef, useState, useEffect, useMemo } from 'react'
 import type { Group } from 'three'
 import * as THREE from 'three'
@@ -184,77 +185,38 @@ function HoverPill({
 }
 
 // Glow sphere component - creates the soft Gaussian glow around Earth
-function EarthGlow({ earthRadius = 6 }: { earthRadius?: number }) {
-  // Custom shader for soft Gaussian-like glow
-  const glowMaterial = useMemo(() => {
-    return new THREE.ShaderMaterial({
-      uniforms: {
-        glowColor: { value: new THREE.Color(0x9DC2F2) }, // Brighter blue
-        intensity: { value: 0.6 }, // More visible
-        falloff: { value: 2.0 }, // Slightly more diffuse
-      },
-      vertexShader: `
-        varying vec3 vNormal;
-        varying vec3 vPositionNormal;
-        void main() {
-          vNormal = normalize(normalMatrix * normal);
-          vPositionNormal = normalize((modelViewMatrix * vec4(position, 1.0)).xyz);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 glowColor;
-        uniform float intensity;
-        uniform float falloff;
-        varying vec3 vNormal;
-        varying vec3 vPositionNormal;
-        void main() {
-          // Fresnel-like effect - glow stronger at edges
-          float rim = 1.0 - max(0.0, dot(vNormal, -vPositionNormal));
-          // Apply Gaussian-like falloff
-          float glow = pow(rim, falloff) * intensity;
-          gl_FragColor = vec4(glowColor, glow);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide, // Render inside of sphere so it appears behind Earth
-      depthWrite: false,
-    })
+function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
+  // Create multiple layers with smooth opacity falloff for Gaussian-like effect
+  const layers = useMemo(() => {
+    const count = 40 // More layers = smoother gradient
+    const result = []
+    for (let i = 0; i < count; i++) {
+      const t = i / (count - 1) // 0 to 1
+      // Scale goes from 1.05 to 1.8
+      const scale = 1.05 + t * 0.75
+      // Opacity follows Gaussian-like curve - peaks early then falls off
+      const gaussian = Math.exp(-Math.pow((t - 0.1) * 2.5, 2))
+      const opacity = gaussian * 0.025
+      result.push({ scale, opacity })
+    }
+    return result
   }, [])
 
-  // Try multiple layered glows for a softer, more Gaussian look
   return (
     <group>
-      {/* Inner glow - tighter */}
-      <mesh scale={1.15}>
-        <sphereGeometry args={[earthRadius, 64, 64]} />
-        <primitive object={glowMaterial} attach="material" />
-      </mesh>
-      {/* Middle glow */}
-      <mesh scale={1.3}>
-        <sphereGeometry args={[earthRadius, 64, 64]} />
-        <meshBasicMaterial 
-          color={0x4a9eff} 
-          transparent 
-          opacity={0.15} 
-          blending={THREE.AdditiveBlending}
-          side={THREE.BackSide}
-          depthWrite={false}
-        />
-      </mesh>
-      {/* Outer glow - most diffuse */}
-      <mesh scale={1.5}>
-        <sphereGeometry args={[earthRadius, 64, 64]} />
-        <meshBasicMaterial 
-          color={0x4a9eff} 
-          transparent 
-          opacity={0.08} 
-          blending={THREE.AdditiveBlending}
-          side={THREE.BackSide}
-          depthWrite={false}
-        />
-      </mesh>
+      {layers.map((layer, i) => (
+        <mesh key={i} scale={layer.scale}>
+          <sphereGeometry args={[earthRadius, 64, 64]} />
+          <meshBasicMaterial 
+            color={0x4a9eff}
+            transparent 
+            opacity={layer.opacity} 
+            blending={THREE.AdditiveBlending}
+            side={THREE.BackSide}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
     </group>
   )
 }
