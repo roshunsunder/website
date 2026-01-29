@@ -179,26 +179,37 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
     if (!targetRef?.current || !isFollowing) {
       return
     }
-
+  
     const targetPos = targetRef.current.position
     const distance = 12
-
+  
     // Calculate direction from Earth (center) to object
     const directionFromEarth = targetPos.clone().normalize()
-
+  
     // Position camera behind the object (relative to Earth)
     targetPosition.current.copy(targetPos).add(directionFromEarth.clone().multiplyScalar(distance))
-
-    // Use the CAMERA'S current right and up vectors for stable offsets
-    // This prevents snapping because we're using the camera's existing orientation
-    const cameraRight = new THREE.Vector3()
-    const cameraUp = new THREE.Vector3()
-    camera.matrix.extractBasis(cameraRight, cameraUp, new THREE.Vector3())
-
-    // Offset the look-at target using camera's current orientation
-    const lookAtOffset = cameraRight.clone().multiplyScalar(3).add(cameraUp.clone().multiplyScalar(2))
+  
+    // Calculate what the camera's orientation WILL be when looking at the object
+    // This gives us stable right/up vectors that don't depend on current camera state
+    const targetForward = targetPos.clone().sub(targetPosition.current).normalize()
+    
+    // Use a consistent world up, but handle the pole case
+    let worldUp = new THREE.Vector3(0, 1, 0)
+    const dot = Math.abs(targetForward.dot(worldUp))
+    if (dot > 0.9) {
+      // Smoothly blend to alternate up vector to avoid sudden switches
+      const altUp = new THREE.Vector3(0, 0, 1)
+      const blend = (dot - 0.9) / 0.1 // 0 at dot=0.9, 1 at dot=1.0
+      worldUp.lerp(altUp, blend)
+    }
+  
+    const targetRight = new THREE.Vector3().crossVectors(targetForward, worldUp).normalize()
+    const targetUp = new THREE.Vector3().crossVectors(targetRight, targetForward).normalize()
+  
+    // Offset the look-at target using the TARGET orientation (not current)
+    const lookAtOffset = targetRight.clone().multiplyScalar(3).add(targetUp.clone().multiplyScalar(2))
     targetLookAt.current.copy(targetPos).add(lookAtOffset)
-
+  
     if (!isTransitioning.current) {
       isTransitioning.current = true
       transitionProgress.current = 0
