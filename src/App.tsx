@@ -259,7 +259,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
         </group>
       </group>
       <HoverPill 
-        text="Satellite" 
+        text="Syngery Interview" 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
@@ -360,7 +360,7 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
         </group>
       </group>
       <HoverPill 
-        text="Space Shuttle" 
+        text="Filesift" 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
