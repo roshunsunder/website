@@ -546,7 +546,7 @@ function App() {
         </div>
         <div className="overlay-bottom-left">
           <a 
-            href="https://www.linkedin.com/in/roshun-sunder" 
+            href="https://www.linkedin.com/in/roshunsunder/" 
             target="_blank" 
             rel="noopener noreferrer"
             className="icon-link"
@@ -557,7 +557,7 @@ function App() {
             </svg>
           </a>
           <a 
-            href="https://github.com/roshun-sunder" 
+            href="https://github.com/roshunsunder" 
             target="_blank" 
             rel="noopener noreferrer"
             className="icon-link"
