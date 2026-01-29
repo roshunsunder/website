@@ -542,6 +542,7 @@ function App() {
       <div className="overlay">
         <div className="overlay-top-left">
           <h1 className="name">Roshun Sunder</h1>
+          <p className="overlay-prompt">Click something to learn about it...</p>
         </div>
         <div className="overlay-bottom-left">
           <a 
