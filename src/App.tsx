@@ -1,29 +1,73 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls, Stars, useGLTF, Text } from '@react-three/drei'
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, useMemo } from 'react'
 import type { Group } from 'three'
 import * as THREE from 'three'
 import './App.css'
 
-function HoverText({ 
+// Helper function to create a rounded rectangle shape
+function createRoundedRectShape(width: number, height: number, radius: number) {
+  const shape = new THREE.Shape()
+  const x = -width / 2
+  const y = -height / 2
+  
+  shape.moveTo(x + radius, y)
+  shape.lineTo(x + width - radius, y)
+  shape.quadraticCurveTo(x + width, y, x + width, y + radius)
+  shape.lineTo(x + width, y + height - radius)
+  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
+  shape.lineTo(x + radius, y + height)
+  shape.quadraticCurveTo(x, y + height, x, y + height - radius)
+  shape.lineTo(x, y + radius)
+  shape.quadraticCurveTo(x, y, x + radius, y)
+  
+  return shape
+}
+
+function HoverPill({ 
   text, 
   objectRef, 
   isHovered, 
+  isSelected,
   onHoverEnd 
 }: { 
   text: string
   objectRef: React.RefObject<Group | null>
   isHovered: boolean
+  isSelected: boolean
   onHoverEnd: () => void
 }) {
-  const textRef = useRef<THREE.Group>(null)
+  const pillRef = useRef<THREE.Group>(null)
   const { camera } = useThree()
   const scrollOffset = useRef(0)
   const opacityRef = useRef(0)
   const timeoutRef = useRef<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
+  
+  // Estimate text width based on character count (rough approximation)
+  const textWidth = useMemo(() => text.length * 0.9, [text])
+  const pillWidth = textWidth + 1.5 // Add padding
+  const pillHeight = 1.2
+  const pillRadius = 0.6
+  
+  // Create pill geometry
+  const pillGeometry = useMemo(() => {
+    const shape = createRoundedRectShape(pillWidth, pillHeight, pillRadius)
+    const geometry = new THREE.ShapeGeometry(shape)
+    return geometry
+  }, [pillWidth, pillHeight, pillRadius])
 
   useEffect(() => {
+    // If selected, immediately hide and don't show on hover
+    if (isSelected) {
+      setIsVisible(false)
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      return
+    }
+
     if (isHovered) {
       // Reset scroll and fade in when hovered
       scrollOffset.current = 0
@@ -48,21 +92,24 @@ function HoverText({
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [isHovered, onHoverEnd])
+  }, [isHovered, isSelected, onHoverEnd])
 
   useFrame((_, delta) => {
-    if (!textRef.current || !objectRef.current || !isVisible) return
+    if (!pillRef.current || !objectRef.current || !isVisible || isSelected) return
 
-    // Make text always face the camera (billboard effect)
-    textRef.current.lookAt(camera.position)
+    // Make pill always face the camera (billboard effect)
+    pillRef.current.lookAt(camera.position)
 
-    // Update position to follow the object
-    const worldPosition = new THREE.Vector3()
-    objectRef.current.getWorldPosition(worldPosition)
+    // Get object world position
+    const objectPos = new THREE.Vector3()
+    objectRef.current.getWorldPosition(objectPos)
     
-    // Scroll out animation - move upward and outward
+    // Calculate direction from Earth (origin) to object
+    const direction = objectPos.clone().normalize()
+    
+    // Scroll out animation - move further from Earth along the same line
     if (isHovered) {
-      scrollOffset.current = Math.min(scrollOffset.current + delta * 2, 3)
+      scrollOffset.current = Math.min(scrollOffset.current + delta * 2, 2)
       opacityRef.current = Math.min(opacityRef.current + delta * 3, 1)
     } else {
       // Fade out after hover ends
@@ -72,38 +119,57 @@ function HoverText({
       }
     }
 
-    // Position text above and slightly in front of the object
-    const offsetY = 2 + scrollOffset.current
-    const offsetZ = scrollOffset.current * 0.5
-    textRef.current.position.copy(worldPosition)
-    textRef.current.position.y += offsetY
-    textRef.current.position.z += offsetZ
+    // Position pill on opposite side of Earth from object
+    // Line: Earth (0,0,0) -> Object -> Pill
+    const distanceFromObject = 5 + scrollOffset.current // Medium distance with scroll
+    const pillPosition = objectPos.clone().add(direction.multiplyScalar(distanceFromObject))
+    pillRef.current.position.copy(pillPosition)
 
-    // Update text opacity
-    if (textRef.current.children[0]) {
-      const textMesh = textRef.current.children[0] as THREE.Mesh
-      if (textMesh.material) {
-        const material = textMesh.material as THREE.MeshStandardMaterial
-        material.opacity = opacityRef.current
-        material.transparent = true
+    // Update pill and text opacity
+    pillRef.current.children.forEach((child) => {
+      if (child instanceof THREE.Mesh) {
+        const material = child.material
+        if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshBasicMaterial) {
+          material.opacity = opacityRef.current
+          material.transparent = true
+        } else if (Array.isArray(material)) {
+          // Handle multi-material case
+          material.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+              mat.opacity = opacityRef.current
+              mat.transparent = true
+            }
+          })
+        }
       }
-    }
+    })
   })
 
-  if (!isVisible) {
+  if (!isVisible || isSelected) {
     return null
   }
 
   return (
-    <group ref={textRef}>
+    <group ref={pillRef}>
+      {/* Pill background */}
+      <mesh geometry={pillGeometry} renderOrder={999}>
+        <meshStandardMaterial 
+          color="#000000" 
+          opacity={0.7} 
+          transparent 
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Text */}
       <Text
-        fontSize={1.5}
+        fontSize={1.0}
         color="#ffffff"
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.1}
+        outlineWidth={0.05}
         outlineColor="#000000"
         renderOrder={1000}
+        position={[0, 0, 0.01]} // Slightly in front of pill
       >
         {text}
       </Text>
@@ -127,7 +193,7 @@ function Earth({ onClick }: { onClick: () => void }) {
   )
 }
 
-function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React.RefObject<Group | null> }) {
+function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
   const { scene } = useGLTF('/models/low_poly_satellite.glb')
   const satelliteGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
@@ -160,15 +226,24 @@ function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React
   }
 
   const handlePointerOver = (e: any) => {
+    if (isSelected) return // Disable hover when selected
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
     setIsHovered(true)
   }
 
   const handlePointerOut = () => {
+    if (isSelected) return // Disable hover when selected
     document.body.style.cursor = 'auto'
     setIsHovered(false)
   }
+
+  // Reset hover state when selected
+  useEffect(() => {
+    if (isSelected) {
+      setIsHovered(false)
+    }
+  }, [isSelected])
 
   return (
     <>
@@ -177,17 +252,18 @@ function Satellite({ onClick, orbitRef }: { onClick: () => void, orbitRef: React
           <primitive object={scene} />
         </group>
       </group>
-      <HoverText 
+      <HoverPill 
         text="Satellite" 
         objectRef={orbitRef} 
         isHovered={isHovered}
+        isSelected={isSelected}
         onHoverEnd={() => setIsHovered(false)}
       />
     </>
   )
 }
 
-function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: React.RefObject<Group | null> }) {
+function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
   const { scene } = useGLTF('/models/low-poly_space_shuttle.glb')
   const shuttleGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
@@ -250,15 +326,24 @@ function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: Re
   }
 
   const handlePointerOver = (e: any) => {
+    if (isSelected) return // Disable hover when selected
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
     setIsHovered(true)
   }
 
   const handlePointerOut = () => {
+    if (isSelected) return // Disable hover when selected
     document.body.style.cursor = 'auto'
     setIsHovered(false)
   }
+
+  // Reset hover state when selected
+  useEffect(() => {
+    if (isSelected) {
+      setIsHovered(false)
+    }
+  }, [isSelected])
 
   return (
     <>
@@ -267,10 +352,11 @@ function SpaceShuttle({ onClick, orbitRef }: { onClick: () => void, orbitRef: Re
           <primitive object={scene} />
         </group>
       </group>
-      <HoverText 
+      <HoverPill 
         text="Space Shuttle" 
         objectRef={orbitRef} 
         isHovered={isHovered}
+        isSelected={isSelected}
         onHoverEnd={() => setIsHovered(false)}
       />
     </>
@@ -426,8 +512,16 @@ function App() {
         <Stars radius={300} depth={60} count={5000} factor={13} saturation={0} fade speed={0} />
         <Environment preset="studio" background={false} />
         <Earth onClick={handleEarthClick} />
-        <Satellite onClick={handleSatelliteClick} orbitRef={satelliteRef} />
-        <SpaceShuttle onClick={handleShuttleClick} orbitRef={shuttleRef} />
+        <Satellite 
+          onClick={handleSatelliteClick} 
+          orbitRef={satelliteRef} 
+          isSelected={selectedObject === 'satellite'}
+        />
+        <SpaceShuttle 
+          onClick={handleShuttleClick} 
+          orbitRef={shuttleRef} 
+          isSelected={selectedObject === 'shuttle'}
+        />
         <OrbitControls 
           ref={controlsRef}
           enableZoom={true} 
