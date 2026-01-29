@@ -29,12 +29,14 @@ function HoverPill({
   objectRef, 
   isHovered, 
   isSelected,
+  distance = 5,
   onHoverEnd 
 }: { 
   text: string
   objectRef: React.RefObject<Group | null>
   isHovered: boolean
   isSelected: boolean
+  distance?: number
   onHoverEnd: () => void
 }) {
   const pillRef = useRef<THREE.Group>(null)
@@ -44,9 +46,9 @@ function HoverPill({
   const timeoutRef = useRef<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
   
-  // Estimate text width based on character count (rough approximation)
-  const textWidth = useMemo(() => text.length * 0.9, [text])
-  const pillWidth = textWidth + 1.5 // Add padding
+  // Estimate text width based on character count (monospaced font)
+  const textWidth = useMemo(() => text.length * 0.6, [text])
+  const pillWidth = textWidth + 0.6 // Reduced padding
   const pillHeight = 1.2
   const pillRadius = 0.6
   
@@ -121,7 +123,7 @@ function HoverPill({
 
     // Position pill on opposite side of Earth from object
     // Line: Earth (0,0,0) -> Object -> Pill
-    const distanceFromObject = 5 + scrollOffset.current // Medium distance with scroll
+    const distanceFromObject = distance + scrollOffset.current
     const pillPosition = objectPos.clone().add(direction.multiplyScalar(distanceFromObject))
     pillRef.current.position.copy(pillPosition)
 
@@ -170,6 +172,8 @@ function HoverPill({
         outlineColor="#000000"
         renderOrder={1000}
         position={[0, 0, 0.01]} // Slightly in front of pill
+        font="/fonts/JetBrainsMono-Regular.ttf"
+        characters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>? "
       >
         {text}
       </Text>
@@ -257,6 +261,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
+        distance={5}
         onHoverEnd={() => setIsHovered(false)}
       />
     </>
@@ -357,6 +362,7 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
+        distance={3}
         onHoverEnd={() => setIsHovered(false)}
       />
     </>
