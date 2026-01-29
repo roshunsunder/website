@@ -181,33 +181,25 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
     }
 
     const targetPos = targetRef.current.position
-    const distance = 12 // Distance from object for close-up
-    
+    const distance = 12
+
     // Calculate direction from Earth (center) to object
     const directionFromEarth = targetPos.clone().normalize()
-    
-    // Calculate camera's right and up vectors for offsetting
-    // We want the object to appear in the bottom-left of the screen
-    // So we offset the camera to the right and up relative to the object
-    const cameraForward = directionFromEarth.clone().negate() // Camera looks toward object (opposite of direction from Earth)
-    const worldUp = new THREE.Vector3(0, 1, 0)
-    const cameraRight = new THREE.Vector3().crossVectors(cameraForward, worldUp).normalize()
-    const cameraUp = new THREE.Vector3().crossVectors(cameraRight, cameraForward).normalize()
-    
-    // Offset to position object in bottom-left: move camera right and up
-    const offsetRight = cameraRight.clone().multiplyScalar(4) // Offset camera to the right
-    const offsetUp = cameraUp.clone().multiplyScalar(3) // Offset camera upward
-    
-    // Position camera on the opposite side of object from Earth, with offset
-    // So Earth will be in the background when looking at the object
-    const basePosition = targetPos.clone().add(directionFromEarth.multiplyScalar(distance))
-    targetPosition.current.copy(basePosition).add(offsetRight).add(offsetUp)
-    
-    // Camera should look at the object (Earth will be in background)
-    targetLookAt.current.copy(targetPos)
+
+    // Position camera behind the object (relative to Earth)
+    targetPosition.current.copy(targetPos).add(directionFromEarth.clone().multiplyScalar(distance))
+
+    // Use the CAMERA'S current right and up vectors for stable offsets
+    // This prevents snapping because we're using the camera's existing orientation
+    const cameraRight = new THREE.Vector3()
+    const cameraUp = new THREE.Vector3()
+    camera.matrix.extractBasis(cameraRight, cameraUp, new THREE.Vector3())
+
+    // Offset the look-at target using camera's current orientation
+    const lookAtOffset = cameraRight.clone().multiplyScalar(3).add(cameraUp.clone().multiplyScalar(2))
+    targetLookAt.current.copy(targetPos).add(lookAtOffset)
 
     if (!isTransitioning.current) {
-      // Start transition - save current position
       isTransitioning.current = true
       transitionProgress.current = 0
       startPosition.current.copy(camera.position)
