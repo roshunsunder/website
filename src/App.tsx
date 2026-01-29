@@ -139,19 +139,38 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
   const transitionProgress = useRef(0)
   const startPosition = useRef(new THREE.Vector3())
   const wasFollowing = useRef(false)
+  const isTransitioningToCenter = useRef(false)
+  const centerTransitionProgress = useRef(0)
+  const startTargetPosition = useRef(new THREE.Vector3())
 
   useFrame((_, delta) => {
     // Detect when we STOP following
     if (wasFollowing.current && !isFollowing) {
-      // Reset OrbitControls target back to Earth (center)
+      // Start smooth transition of controls target back to Earth (center)
       if (controlsRef.current) {
-        controlsRef.current.target.set(0, 0, 0)
-        controlsRef.current.update()
+        isTransitioningToCenter.current = true
+        centerTransitionProgress.current = 0
+        startTargetPosition.current.copy(controlsRef.current.target)
       }
       isTransitioning.current = false
       transitionProgress.current = 0
     }
     wasFollowing.current = isFollowing
+
+    // Smooth transition of controls target to center when deselecting
+    if (isTransitioningToCenter.current && controlsRef.current) {
+      centerTransitionProgress.current = Math.min(centerTransitionProgress.current + delta * 0.6, 1)
+      const t = centerTransitionProgress.current
+      const smoothT = t * t * (3 - 2 * t) // Smoothstep interpolation
+      
+      // Lerp controls target from start position to center
+      controlsRef.current.target.lerpVectors(startTargetPosition.current, new THREE.Vector3(0, 0, 0), smoothT)
+      controlsRef.current.update()
+      
+      if (centerTransitionProgress.current >= 1) {
+        isTransitioningToCenter.current = false
+      }
+    }
 
     if (controlsRef.current) {
       controlsRef.current.enabled = !isFollowing
