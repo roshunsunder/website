@@ -183,6 +183,82 @@ function HoverPill({
   )
 }
 
+// Glow sphere component - creates the soft Gaussian glow around Earth
+function EarthGlow({ earthRadius = 6 }: { earthRadius?: number }) {
+  // Custom shader for soft Gaussian-like glow
+  const glowMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      uniforms: {
+        glowColor: { value: new THREE.Color(0x4a9eff) }, // Brighter blue
+        intensity: { value: 0.6 }, // More visible
+        falloff: { value: 2.0 }, // Slightly more diffuse
+      },
+      vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vPositionNormal;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vPositionNormal = normalize((modelViewMatrix * vec4(position, 1.0)).xyz);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 glowColor;
+        uniform float intensity;
+        uniform float falloff;
+        varying vec3 vNormal;
+        varying vec3 vPositionNormal;
+        void main() {
+          // Fresnel-like effect - glow stronger at edges
+          float rim = 1.0 - max(0.0, dot(vNormal, -vPositionNormal));
+          // Apply Gaussian-like falloff
+          float glow = pow(rim, falloff) * intensity;
+          gl_FragColor = vec4(glowColor, glow);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide, // Render inside of sphere so it appears behind Earth
+      depthWrite: false,
+    })
+  }, [])
+
+  // Try multiple layered glows for a softer, more Gaussian look
+  return (
+    <group>
+      {/* Inner glow - tighter */}
+      <mesh scale={1.15}>
+        <sphereGeometry args={[earthRadius, 64, 64]} />
+        <primitive object={glowMaterial} attach="material" />
+      </mesh>
+      {/* Middle glow */}
+      <mesh scale={1.3}>
+        <sphereGeometry args={[earthRadius, 64, 64]} />
+        <meshBasicMaterial 
+          color={0x4a9eff} 
+          transparent 
+          opacity={0.15} 
+          blending={THREE.AdditiveBlending}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+      {/* Outer glow - most diffuse */}
+      <mesh scale={1.5}>
+        <sphereGeometry args={[earthRadius, 64, 64]} />
+        <meshBasicMaterial 
+          color={0x4a9eff} 
+          transparent 
+          opacity={0.08} 
+          blending={THREE.AdditiveBlending}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
 function Earth({ onClick }: { onClick: () => void }) {
   const { scene } = useGLTF('/models/scene.glb')
   const groupRef = useRef<Group>(null)
@@ -195,6 +271,8 @@ function Earth({ onClick }: { onClick: () => void }) {
   return (
     <group ref={groupRef} onClick={onClick}>
       <primitive object={scene} />
+      {/* Add the glow effect - adjust earthRadius to match your model */}
+      <EarthGlow earthRadius={8} />
     </group>
   )
 }
@@ -538,6 +616,7 @@ function App() {
           onStart={handleControlsStart}
         />
         <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
+        
       </Canvas>
       <div className="overlay">
         <div className="overlay-top-left">
