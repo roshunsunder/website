@@ -6,10 +6,15 @@ import type { Group } from 'three'
 import * as THREE from 'three'
 import './App.css'
 
+import sceneGlb from './assets/models/scene.glb?url'
+import satelliteGlb from './assets/models/low_poly_satellite.glb?url'
+import shuttleGlb from './assets/models/low-poly_space_shuttle.glb?url'
+import fontRegular from './assets/fonts/JetBrainsMono-Regular.ttf?url'
+
 // Preload all GLB models so they're cached before components mount
-useGLTF.preload('/models/scene.glb')
-useGLTF.preload('/models/low_poly_satellite.glb')
-useGLTF.preload('/models/low-poly_space_shuttle.glb')
+useGLTF.preload(sceneGlb)
+useGLTF.preload(satelliteGlb)
+useGLTF.preload(shuttleGlb)
 
 // Helper function to create a rounded rectangle shape
 function createRoundedRectShape(width: number, height: number, radius: number) {
@@ -180,7 +185,7 @@ function HoverPill({
         outlineColor="#000000"
         renderOrder={1000}
         position={[0, 0, 0.01]} // Slightly in front of pill
-        font="/fonts/JetBrainsMono-Regular.ttf"
+        font={fontRegular}
         characters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>? "
       >
         {text}
@@ -227,7 +232,7 @@ function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
 }
 
 function Earth({ onClick }: { onClick: () => void }) {
-  const { scene } = useGLTF('/models/scene.glb')
+  const { scene } = useGLTF(sceneGlb)
   const groupRef = useRef<Group>(null)
 
   useFrame((_, delta) => {
@@ -245,7 +250,7 @@ function Earth({ onClick }: { onClick: () => void }) {
 }
 
 function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
-  const { scene } = useGLTF('/models/low_poly_satellite.glb')
+  const { scene } = useGLTF(satelliteGlb)
   const satelliteGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(Math.PI / 4) // Start at 45 degrees (in radians)
@@ -316,7 +321,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
 }
 
 function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
-  const { scene } = useGLTF('/models/low-poly_space_shuttle.glb')
+  const { scene } = useGLTF(shuttleGlb)
   const shuttleGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(0) // Start at 0 degrees (in radians)
@@ -522,9 +527,6 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
   return null
 }
 
-// Font used by Text components - preload so it's cached before first render
-const FONT_URL = '/fonts/JetBrainsMono-Regular.ttf'
-
 function App() {
   const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | null>(null)
   const satelliteRef = useRef<Group>(null)
@@ -533,7 +535,7 @@ function App() {
 
   // Preload font and ensure models are loading on first mount
   useEffect(() => {
-    fetch(FONT_URL).catch(() => {}) // Preload font into browser cache
+    fetch(fontRegular).catch(() => {}) // Preload font into browser cache
   }, [])
 
   const handleSatelliteClick = () => {
