@@ -193,15 +193,15 @@ function HoverPill({
 function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
   // Create multiple layers with smooth opacity falloff for Gaussian-like effect
   const layers = useMemo(() => {
-    const count = 40 // More layers = smoother gradient
+    const count = 20 // More layers = smoother gradient
     const result = []
     for (let i = 0; i < count; i++) {
       const t = i / (count - 1) // 0 to 1
       // Scale goes from 1.05 to 1.8
-      const scale = 1.05 + t * 0.75
+      const scale = 1.06 + t * 0.85
       // Opacity follows Gaussian-like curve - peaks early then falls off
       const gaussian = Math.exp(-Math.pow((t - 0.1) * 2.5, 2))
-      const opacity = gaussian * 0.025
+      const opacity = gaussian * 0.035
       result.push({ scale, opacity })
     }
     return result
@@ -211,7 +211,7 @@ function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
     <group>
       {layers.map((layer, i) => (
         <mesh key={i} scale={layer.scale}>
-          <sphereGeometry args={[earthRadius, 64, 64]} />
+          <sphereGeometry args={[earthRadius, 24, 24]} />
           <meshBasicMaterial 
             color={0x4a9eff}
             transparent 
