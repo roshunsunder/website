@@ -6,6 +6,11 @@ import type { Group } from 'three'
 import * as THREE from 'three'
 import './App.css'
 
+// Preload all GLB models so they're cached before components mount
+useGLTF.preload('/models/scene.glb')
+useGLTF.preload('/models/low_poly_satellite.glb')
+useGLTF.preload('/models/low-poly_space_shuttle.glb')
+
 // Helper function to create a rounded rectangle shape
 function createRoundedRectShape(width: number, height: number, radius: number) {
   const shape = new THREE.Shape()
@@ -517,11 +522,19 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
   return null
 }
 
+// Font used by Text components - preload so it's cached before first render
+const FONT_URL = '/fonts/JetBrainsMono-Regular.ttf'
+
 function App() {
   const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | null>(null)
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
   const controlsRef = useRef<any>(null)
+
+  // Preload font and ensure models are loading on first mount
+  useEffect(() => {
+    fetch(FONT_URL).catch(() => {}) // Preload font into browser cache
+  }, [])
 
   const handleSatelliteClick = () => {
     // Toggle selection - if already selected, deselect
