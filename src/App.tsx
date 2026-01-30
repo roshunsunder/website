@@ -201,7 +201,7 @@ function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
       const scale = 1.06 + t * 0.85
       // Opacity follows Gaussian-like curve - peaks early then falls off
       const gaussian = Math.exp(-Math.pow((t - 0.1) * 2.5, 2))
-      const opacity = gaussian * 0.035
+      const opacity = gaussian * 0.04
       result.push({ scale, opacity })
     }
     return result
