@@ -662,24 +662,23 @@ const DETAIL_PANEL_FADE_OUT_MS = 400
 
 function DetailPanel({
   selectedObject,
+  isClosing,
   onClose,
+  onClosingComplete,
 }: {
   selectedObject: 'satellite' | 'shuttle' | 'moon'
+  isClosing: boolean
   onClose: () => void
+  onClosingComplete: () => void
 }) {
-  const [isClosing, setIsClosing] = useState(false)
   const label = OBJECT_LABELS[selectedObject]
   const content = OBJECT_CONTENT[selectedObject]
 
-  const handleClose = () => {
-    setIsClosing(true)
-  }
-
   useEffect(() => {
     if (!isClosing) return
-    const t = setTimeout(() => onClose(), DETAIL_PANEL_FADE_OUT_MS)
+    const t = setTimeout(() => onClosingComplete(), DETAIL_PANEL_FADE_OUT_MS)
     return () => clearTimeout(t)
-  }, [isClosing, onClose])
+  }, [isClosing, onClosingComplete])
 
   return (
     <div className={`detail-panel${isClosing ? ' detail-panel--closing' : ''}`}>
@@ -690,7 +689,7 @@ function DetailPanel({
           <button
             type="button"
             className="detail-panel-close"
-            onClick={handleClose}
+            onClick={onClose}
             aria-label="Close"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -714,11 +713,19 @@ function DetailPanel({
 
 function Overlay({
   selectedObject,
+  closingObject,
   onClose,
+  onClosingComplete,
 }: {
   selectedObject: 'satellite' | 'shuttle' | 'moon' | null
+  closingObject: 'satellite' | 'shuttle' | 'moon' | null
   onClose: () => void
+  onClosingComplete: () => void
 }) {
+  const showPanel = selectedObject != null || closingObject != null
+  const displayObject = selectedObject ?? closingObject
+  const isClosing = closingObject != null
+
   return (
     <div className="overlay">
         <div className="overlay-top-left">
@@ -749,8 +756,13 @@ function Overlay({
             </svg>
           </a>
         </div>
-        {selectedObject != null && (
-          <DetailPanel selectedObject={selectedObject} onClose={onClose} />
+        {showPanel && displayObject != null && (
+          <DetailPanel
+            selectedObject={displayObject}
+            isClosing={isClosing}
+            onClose={onClose}
+            onClosingComplete={onClosingComplete}
+          />
         )}
       </div>
   );
@@ -758,6 +770,7 @@ function Overlay({
 
 function App() {
   const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
+  const [closingObject, setClosingObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
   const moonRef = useRef<Group>(null)
@@ -767,6 +780,18 @@ function App() {
   useEffect(() => {
     fetch(fontRegular).catch(() => {}) // Preload font into browser cache
   }, [])
+
+  // Start camera refocus and panel fade-out together; panel unmounts after fade-out
+  const closePanel = () => {
+    if (selectedObject != null) {
+      setClosingObject(selectedObject)
+      setSelectedObject(null)
+    }
+  }
+
+  const handleClosingComplete = () => {
+    setClosingObject(null)
+  }
 
   const handleSatelliteClick = () => {
     // Toggle selection - if already selected, deselect
@@ -783,21 +808,19 @@ function App() {
   }
 
   const handleEarthClick = () => {
-    // Clicking Earth deselects any selected object
-    setSelectedObject(null)
+    // Clicking Earth deselects any selected object (with panel fade-out)
+    closePanel()
   }
 
   const handleControlsStart = () => {
-    // If user manually controls camera, stop following
-    if (selectedObject) {
-      setSelectedObject(null)
-    }
+    // If user manually controls camera, stop following (with panel fade-out)
+    closePanel()
   }
 
   const handleCanvasClick = (e: any) => {
-    // Clicking on empty space (not on an object) deselects
+    // Clicking on empty space (not on an object) deselects (with panel fade-out)
     if (e.target === e.currentTarget) {
-      setSelectedObject(null)
+      closePanel()
     }
   }
 
@@ -839,7 +862,12 @@ function App() {
         <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
         
       </Canvas>
-      <Overlay selectedObject={selectedObject} onClose={() => setSelectedObject(null)} />
+      <Overlay
+        selectedObject={selectedObject}
+        closingObject={closingObject}
+        onClose={closePanel}
+        onClosingComplete={handleClosingComplete}
+      />
     </div>
   )
 }
