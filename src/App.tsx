@@ -2,6 +2,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls, Stars, useGLTF, Text } from '@react-three/drei'
 
 import React, { useRef, useState, useEffect, useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
 import type { Group } from 'three'
 import * as THREE from 'three'
 import './App.css'
@@ -644,7 +645,67 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
   return null
 }
 
-function Overlay() {
+// Labels and markdown content per selectable object (edit content here)
+const OBJECT_LABELS: Record<'satellite' | 'shuttle' | 'moon', string> = {
+  satellite: 'Synergy Interview',
+  shuttle: 'Filesift',
+  moon: 'Moon',
+}
+
+const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon', string> = {
+  satellite: '',
+  shuttle: '',
+  moon: '',
+}
+
+function DetailPanel({
+  selectedObject,
+  onClose,
+}: {
+  selectedObject: 'satellite' | 'shuttle' | 'moon'
+  onClose: () => void
+}) {
+  const label = OBJECT_LABELS[selectedObject]
+  const content = OBJECT_CONTENT[selectedObject]
+
+  return (
+    <div className="detail-panel">
+      <div className="detail-panel-backdrop" aria-hidden />
+      <div className="detail-panel-box">
+        <header className="detail-panel-header">
+          <span>{label}</span>
+          <button
+            type="button"
+            className="detail-panel-close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+        <div className="detail-panel-body">
+          <div className="markdown-content">
+            {content ? (
+              <ReactMarkdown>{content}</ReactMarkdown>
+            ) : (
+              <p style={{ color: 'rgba(255,255,255,0.5)' }}>No content yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Overlay({
+  selectedObject,
+  onClose,
+}: {
+  selectedObject: 'satellite' | 'shuttle' | 'moon' | null
+  onClose: () => void
+}) {
   return (
     <div className="overlay">
         <div className="overlay-top-left">
@@ -675,6 +736,9 @@ function Overlay() {
             </svg>
           </a>
         </div>
+        {selectedObject != null && (
+          <DetailPanel selectedObject={selectedObject} onClose={onClose} />
+        )}
       </div>
   );
 }
@@ -762,7 +826,7 @@ function App() {
         <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
         
       </Canvas>
-      <Overlay />
+      <Overlay selectedObject={selectedObject} onClose={() => setSelectedObject(null)} />
     </div>
   )
 }

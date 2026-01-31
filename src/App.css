@@ -7,6 +7,13 @@
 
 @font-face {
   font-family: 'JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
   src: url('./assets/fonts/JetBrainsMono-ThinItalic.ttf') format('truetype');
   font-weight: 100;
   font-style: italic;
@@ -93,4 +100,132 @@
 
 .icon-link svg {
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Detail panel (right half when an object is selected) */
+.detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  animation: detail-panel-fade-in 0.4s ease-out forwards;
+}
+
+@keyframes detail-panel-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.detail-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.detail-panel-box {
+  position: relative;
+  margin: 2rem;
+  margin-left: 1rem;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.detail-panel-header {
+  flex-shrink: 0;
+  background: #2a2a2a;
+  color: #ffffff;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-size: 1.1rem;
+}
+
+.detail-panel-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.detail-panel-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.detail-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: rgba(48, 48, 48, 0.85);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.detail-panel-body .markdown-content h1,
+.detail-panel-body .markdown-content h2,
+.detail-panel-body .markdown-content h3 {
+  font-weight: 100;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.detail-panel-body .markdown-content p {
+  margin-bottom: 0.75rem;
+}
+
+.detail-panel-body .markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.detail-panel-body .markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.detail-panel-body .markdown-content ul,
+.detail-panel-body .markdown-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.detail-panel-body .markdown-content a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+.detail-panel-body .markdown-content a:hover {
+  color: #ffffff;
 }
