@@ -703,7 +703,7 @@ function DetailPanel({
             {content ? (
               <ReactMarkdown>{content}</ReactMarkdown>
             ) : (
-              <p style={{ color: 'rgba(255,255,255,0.5)' }}>No content yet.</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)' }}>No content yet.</p>
             )}
           </div>
         </div>
