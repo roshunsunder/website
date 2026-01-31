@@ -9,12 +9,16 @@ import './App.css'
 import sceneGlb from './assets/models/scene.glb?url'
 import satelliteGlb from './assets/models/low_poly_satellite.glb?url'
 import shuttleGlb from './assets/models/low-poly_space_shuttle.glb?url'
+import kerbalGlb from './assets/models/kerbal_eva_model.glb?url'
+import moonGlb from './assets/models/low_poly_moon.glb?url'
 import fontRegular from './assets/fonts/JetBrainsMono-Regular.ttf?url'
 
 // Preload all GLB models so they're cached before components mount
 useGLTF.preload(sceneGlb)
 useGLTF.preload(satelliteGlb)
 useGLTF.preload(shuttleGlb)
+useGLTF.preload(kerbalGlb)
+useGLTF.preload(moonGlb)
 
 // Helper function to create a rounded rectangle shape
 function createRoundedRectShape(width: number, height: number, radius: number) {
@@ -421,6 +425,136 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
   )
 }
 
+function KerbalEva({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
+  const { scene } = useGLTF(kerbalGlb)
+  const kerbalGroupRef = useRef<Group>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  const angleRef = useRef(Math.PI * 0.6) // Start at a different angle
+  const orbitRadius = 12
+  const orbitSpeed = 0.25
+  const kerbalScale = .5
+  const orbitTiltX = 1.2
+
+  useFrame((_, delta) => {
+    if (!orbitRef.current || !kerbalGroupRef.current) return
+    angleRef.current += delta * orbitSpeed
+
+    const x = Math.cos(angleRef.current) * orbitRadius
+    const z = Math.sin(angleRef.current) * orbitRadius
+
+    orbitRef.current.position.x = x
+    orbitRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitRef.current.position.z = Math.cos(orbitTiltX) * z
+
+    kerbalGroupRef.current.rotation.y += delta * 0.4
+  })
+
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    onClick()
+  }
+
+  const handlePointerOver = (e: any) => {
+    if (isSelected) return
+    e.stopPropagation()
+    document.body.style.cursor = 'pointer'
+    setIsHovered(true)
+  }
+
+  const handlePointerOut = () => {
+    if (isSelected) return
+    document.body.style.cursor = 'auto'
+    setIsHovered(false)
+  }
+
+  useEffect(() => {
+    if (isSelected) setIsHovered(false)
+  }, [isSelected])
+
+  return (
+    <>
+      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+        <group ref={kerbalGroupRef} scale={kerbalScale}>
+          <primitive object={scene} />
+        </group>
+      </group>
+      <HoverPill
+        text="Kerbal"
+        objectRef={orbitRef}
+        isHovered={isHovered}
+        isSelected={isSelected}
+        distance={4}
+        onHoverEnd={() => setIsHovered(false)}
+      />
+    </>
+  )
+}
+
+function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
+  const { scene } = useGLTF(moonGlb)
+  const moonGroupRef = useRef<Group>(null)
+  const [isHovered, setIsHovered] = useState(false)
+  const angleRef = useRef(Math.PI * 1.3) // Start at a different angle
+  const orbitRadius = 20
+  const orbitSpeed = 0.12
+  const moonScale = 0.2
+  const orbitTiltX = 0.8
+
+  useFrame((_, delta) => {
+    if (!orbitRef.current || !moonGroupRef.current) return
+    angleRef.current += delta * orbitSpeed
+
+    const x = Math.cos(angleRef.current) * orbitRadius
+    const z = Math.sin(angleRef.current) * orbitRadius
+
+    orbitRef.current.position.x = x
+    orbitRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitRef.current.position.z = Math.cos(orbitTiltX) * z
+
+    moonGroupRef.current.rotation.y += delta * 0.2
+  })
+
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    onClick()
+  }
+
+  const handlePointerOver = (e: any) => {
+    if (isSelected) return
+    e.stopPropagation()
+    document.body.style.cursor = 'pointer'
+    setIsHovered(true)
+  }
+
+  const handlePointerOut = () => {
+    if (isSelected) return
+    document.body.style.cursor = 'auto'
+    setIsHovered(false)
+  }
+
+  useEffect(() => {
+    if (isSelected) setIsHovered(false)
+  }, [isSelected])
+
+  return (
+    <>
+      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+        <group ref={moonGroupRef} scale={moonScale}>
+          <primitive object={scene} />
+        </group>
+      </group>
+      <HoverPill
+        text="Moon"
+        objectRef={orbitRef}
+        isHovered={isHovered}
+        isSelected={isSelected}
+        distance={5}
+        onHoverEnd={() => setIsHovered(false)}
+      />
+    </>
+  )
+}
+
 function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: React.RefObject<Group | null> | null, isFollowing: boolean, controlsRef: React.RefObject<any> }) {
   const { camera } = useThree()
   const targetPosition = useRef(new THREE.Vector3())
@@ -528,9 +662,11 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 }
 
 function App() {
-  const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | null>(null)
+  const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'kerbal' | 'moon' | null>(null)
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
+  const kerbalRef = useRef<Group>(null)
+  const moonRef = useRef<Group>(null)
   const controlsRef = useRef<any>(null)
 
   // Preload font and ensure models are loading on first mount
@@ -546,6 +682,14 @@ function App() {
   const handleShuttleClick = () => {
     // Toggle selection - if already selected, deselect
     setSelectedObject(selectedObject === 'shuttle' ? null : 'shuttle')
+  }
+
+  const handleKerbalClick = () => {
+    setSelectedObject(selectedObject === 'kerbal' ? null : 'kerbal')
+  }
+
+  const handleMoonClick = () => {
+    setSelectedObject(selectedObject === 'moon' ? null : 'moon')
   }
 
   const handleEarthClick = () => {
@@ -567,7 +711,12 @@ function App() {
     }
   }
 
-  const targetRef = selectedObject === 'satellite' ? satelliteRef : selectedObject === 'shuttle' ? shuttleRef : null
+  const targetRef =
+    selectedObject === 'satellite' ? satelliteRef
+    : selectedObject === 'shuttle' ? shuttleRef
+    : selectedObject === 'kerbal' ? kerbalRef
+    : selectedObject === 'moon' ? moonRef
+    : null
 
   return (
     <div className="canvas-container">
@@ -584,6 +733,16 @@ function App() {
           onClick={handleShuttleClick} 
           orbitRef={shuttleRef} 
           isSelected={selectedObject === 'shuttle'}
+        />
+        <KerbalEva 
+          onClick={handleKerbalClick} 
+          orbitRef={kerbalRef} 
+          isSelected={selectedObject === 'kerbal'}
+        />
+        <Moon 
+          onClick={handleMoonClick} 
+          orbitRef={moonRef} 
+          isSelected={selectedObject === 'moon'}
         />
         <OrbitControls 
           ref={controlsRef}
