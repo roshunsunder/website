@@ -501,8 +501,44 @@ function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef
   )
 }
 
+// Viewport breakpoints for responsive camera/look-at behavior
+const VIEWPORT_WIDTH_FULL = 1200   // wide: use full offset / unchanged behavior
+const VIEWPORT_WIDTH_NARROW = 430  // narrow: reduce horizontal offset so object stays centered
+const RIGHT_OFFSET_FULL = 3
+const RIGHT_OFFSET_NARROW = 0.5
+
+function getRightOffsetScalar(width: number): number {
+  if (width >= VIEWPORT_WIDTH_FULL) return RIGHT_OFFSET_FULL
+  if (width <= VIEWPORT_WIDTH_NARROW) return RIGHT_OFFSET_NARROW
+  const t = (width - VIEWPORT_WIDTH_NARROW) / (VIEWPORT_WIDTH_FULL - VIEWPORT_WIDTH_NARROW)
+  return RIGHT_OFFSET_NARROW + t * (RIGHT_OFFSET_FULL - RIGHT_OFFSET_NARROW)
+}
+
+// Initial camera Z: 45 for wide aspect, further back for narrow (e.g. portrait phone)
+const ASPECT_FULL = 1.5  // aspect >= this keeps z = 45
+const INITIAL_Z_FULL = 45
+const INITIAL_Z_NARROW_FACTOR = 25  // z = 45 + (1.5 - aspect) * this when aspect < 1.5
+
+function getInitialCameraZ(width: number, height: number): number {
+  const aspect = width / height
+  if (aspect >= ASPECT_FULL) return INITIAL_Z_FULL
+  return INITIAL_Z_FULL + (ASPECT_FULL - aspect) * INITIAL_Z_NARROW_FACTOR
+}
+
+function InitialCameraDistance() {
+  const { camera, size } = useThree()
+  const hasSet = useRef(false)
+  useFrame(() => {
+    if (hasSet.current) return
+    hasSet.current = true
+    const z = getInitialCameraZ(size.width, size.height)
+    camera.position.z = z
+  })
+  return null
+}
+
 function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: React.RefObject<Group | null> | null, isFollowing: boolean, controlsRef: React.RefObject<any> }) {
-  const { camera } = useThree()
+  const { camera, size } = useThree()
   const targetPosition = useRef(new THREE.Vector3())
   const targetLookAt = useRef(new THREE.Vector3())
   const isTransitioning = useRef(false)
@@ -576,8 +612,9 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
     const targetRight = new THREE.Vector3().crossVectors(targetForward, worldUp).normalize()
     const targetUp = new THREE.Vector3().crossVectors(targetRight, targetForward).normalize()
   
-    // Offset the look-at target using the TARGET orientation (not current)
-    const lookAtOffset = targetRight.clone().multiplyScalar(3).add(targetUp.clone().multiplyScalar(2))
+    // Offset the look-at target; reduce horizontal offset on narrow viewports so object stays centered
+    const rightScalar = getRightOffsetScalar(size.width)
+    const lookAtOffset = targetRight.clone().multiplyScalar(rightScalar).add(targetUp.clone().multiplyScalar(2))
     targetLookAt.current.copy(targetPos).add(lookAtOffset)
   
     if (!isTransitioning.current) {
@@ -721,6 +758,7 @@ function App() {
           enableRotate={true}
           onStart={handleControlsStart}
         />
+        <InitialCameraDistance />
         <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
         
       </Canvas>
