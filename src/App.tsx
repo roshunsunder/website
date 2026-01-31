@@ -430,16 +430,16 @@ function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef
   const kerbalScene = useGLTF(kerbalGlb).scene
   const moonGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
-  const angleRef = useRef(Math.PI * 1.3)
-  const orbitRadius = 20
+  const angleRef = useRef(Math.PI)
+  const orbitRadius = 25
   const orbitSpeed = 0.12
   const moonScale = 0.2
-  const orbitTiltX = 0.8
-  const kerbalScale = 0.5
+  const orbitTiltX = 0.2
+  const kerbalScale = 0.25
 
   // Position Kerbal on moon surface - these are now RELATIVE to the moon
   // Adjust these to move the Kerbal around the moon's surface
-  const kerbalPosition: [number, number, number] = [0, 19.2, 0] // Standing on top
+  const kerbalPosition: [number, number, number] = [8.1, 15.1, 0] // Standing on top
 
   useFrame((_, delta) => {
     if (!orbitRef.current || !moonGroupRef.current) return
@@ -484,7 +484,7 @@ function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef
         <group ref={moonGroupRef} scale={moonScale}>
           <primitive object={moonScene} />
           {/* Kerbal is now a CHILD of the moon group - he moves/rotates with it */}
-          <group position={kerbalPosition} scale={kerbalScale / moonScale}>
+          <group position={kerbalPosition} scale={kerbalScale / moonScale} rotation={[0, 0, -1 * Math.PI / 2.8]}>
             <primitive object={kerbalScene} />
           </group>
         </group>
