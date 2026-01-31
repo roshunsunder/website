@@ -112,7 +112,12 @@
   pointer-events: auto;
   display: flex;
   flex-direction: column;
-  animation: detail-panel-fade-in 0.4s ease-out forwards;
+  opacity: 0;
+  animation: detail-panel-fade-in 0.4s ease-out 1.2s forwards;
+}
+
+.detail-panel.detail-panel--closing {
+  animation: detail-panel-fade-out 0.4s ease-out forwards;
 }
 
 @keyframes detail-panel-fade-in {
@@ -124,10 +129,19 @@
   }
 }
 
+@keyframes detail-panel-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 .detail-panel-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.15);
+  background: transparent;
   pointer-events: none;
 }
 

@@ -658,6 +658,8 @@ const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon', string> = {
   moon: '',
 }
 
+const DETAIL_PANEL_FADE_OUT_MS = 400
+
 function DetailPanel({
   selectedObject,
   onClose,
@@ -665,11 +667,22 @@ function DetailPanel({
   selectedObject: 'satellite' | 'shuttle' | 'moon'
   onClose: () => void
 }) {
+  const [isClosing, setIsClosing] = useState(false)
   const label = OBJECT_LABELS[selectedObject]
   const content = OBJECT_CONTENT[selectedObject]
 
+  const handleClose = () => {
+    setIsClosing(true)
+  }
+
+  useEffect(() => {
+    if (!isClosing) return
+    const t = setTimeout(() => onClose(), DETAIL_PANEL_FADE_OUT_MS)
+    return () => clearTimeout(t)
+  }, [isClosing, onClose])
+
   return (
-    <div className="detail-panel">
+    <div className={`detail-panel${isClosing ? ' detail-panel--closing' : ''}`}>
       <div className="detail-panel-backdrop" aria-hidden />
       <div className="detail-panel-box">
         <header className="detail-panel-header">
@@ -677,7 +690,7 @@ function DetailPanel({
           <button
             type="button"
             className="detail-panel-close"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
