@@ -14,6 +14,10 @@ import kerbalGlb from './assets/models/kerbal_eva_model.glb?url'
 import moonGlb from './assets/models/low_poly_moon.glb?url'
 import fontRegular from './assets/fonts/JetBrainsMono-Regular.ttf?url'
 
+import satelliteContent from './content/satellite.md?raw'
+import shuttleContent from './content/shuttle.md?raw'
+import moonContent from './content/moon.md?raw'
+
 // Preload all GLB models so they're cached before components mount
 useGLTF.preload(sceneGlb)
 useGLTF.preload(satelliteGlb)
@@ -653,9 +657,9 @@ const OBJECT_LABELS: Record<'satellite' | 'shuttle' | 'moon', string> = {
 }
 
 const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon', string> = {
-  satellite: '',
-  shuttle: '',
-  moon: '',
+  satellite: satelliteContent,
+  shuttle: shuttleContent,
+  moon: moonContent,
 }
 
 const DETAIL_PANEL_FADE_OUT_MS = 400
