@@ -72,12 +72,29 @@ function HoverPill({
   const pillHeight = 1.2
   const pillRadius = 0.6
   
-  // Create pill geometry
+  // Create pill geometry and material - MEMOIZED to prevent recreation
   const pillGeometry = useMemo(() => {
     const shape = createRoundedRectShape(pillWidth, pillHeight, pillRadius)
     const geometry = new THREE.ShapeGeometry(shape)
     return geometry
   }, [pillWidth, pillHeight, pillRadius])
+
+  const pillMaterial = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: "#000000",
+      opacity: 0.7,
+      transparent: true,
+      depthWrite: false
+    })
+  }, [])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      pillGeometry.dispose()
+      pillMaterial.dispose()
+    }
+  }, [pillGeometry, pillMaterial])
 
   useEffect(() => {
     if (isSelected) {
@@ -149,24 +166,8 @@ function HoverPill({
     const pillPosition = objectPos.clone().add(direction.multiplyScalar(distance))
     pillRef.current.position.copy(pillPosition)
 
-    // Update pill and text opacity
-    pillRef.current.children.forEach((child) => {
-      if (child instanceof THREE.Mesh) {
-        const material = child.material
-        if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshBasicMaterial) {
-          material.opacity = opacityRef.current
-          material.transparent = true
-        } else if (Array.isArray(material)) {
-          // Handle multi-material case
-          material.forEach((mat) => {
-            if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
-              mat.opacity = opacityRef.current
-              mat.transparent = true
-            }
-          })
-        }
-      }
-    })
+    // Update pill material opacity
+    pillMaterial.opacity = opacityRef.current * 0.7
   })
 
   if (!isVisible || isSelected) {
@@ -176,14 +177,7 @@ function HoverPill({
   return (
     <group ref={pillRef}>
       {/* Pill background */}
-      <mesh geometry={pillGeometry} renderOrder={999}>
-        <meshStandardMaterial 
-          color="#000000" 
-          opacity={0.7} 
-          transparent 
-          depthWrite={false}
-        />
-      </mesh>
+      <mesh geometry={pillGeometry} material={pillMaterial} renderOrder={999} />
       {/* Text */}
       <Text
         fontSize={1.0}
@@ -836,7 +830,15 @@ function App() {
 
   return (
     <div className="canvas-container">
-      <Canvas camera={{ position: [0, 0, 45], fov: 50 }} gl={{ toneMappingExposure: 0.5 }} onClick={handleCanvasClick}>
+      <Canvas 
+        camera={{ position: [0, 0, 45], fov: 50 }} 
+        gl={{ 
+          toneMappingExposure: 0.5,
+          preserveDrawingBuffer: false, // Helps prevent context loss
+          powerPreference: 'high-performance'
+        }}
+        onClick={handleCanvasClick}
+      >
         <Stars radius={300} depth={60} count={5000} factor={13} saturation={0} fade speed={0} />
         <Environment preset="studio" background={false} />
         <Earth onClick={handleEarthClick} />
@@ -861,6 +863,7 @@ function App() {
           enablePan={true} 
           enableRotate={true}
           onStart={handleControlsStart}
+          makeDefault
         />
         <InitialCameraDistance />
         <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
