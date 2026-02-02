@@ -58,7 +58,8 @@
 }
 
 @media (max-width: 768px) {
-  .overlay--panel-open .overlay-top-left {
+  .overlay--panel-open .overlay-top-left,
+  .overlay--panel-open .overlay-bottom-left {
     opacity: 0;
     pointer-events: none;
   }
@@ -71,6 +72,7 @@
   padding: 2rem;
   display: flex;
   gap: 1.5rem;
+  transition: opacity 0.35s ease;
 }
 
 .name {
@@ -139,6 +141,16 @@
     max-width: 420px;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  .detail-panel-header {
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .detail-panel-body {
+    font-size: 0.875rem;
+    padding: 1rem;
   }
 }
 
