@@ -312,7 +312,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
         </group>
       </group>
       <HoverPill 
-        text="Synergy Interview" 
+        text="About Me" 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
@@ -413,7 +413,7 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
         </group>
       </group>
       <HoverPill 
-        text="Filesift" 
+        text="Projects" 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
@@ -644,9 +644,9 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 }
 
 // Labels and markdown content per selectable object (edit content here)
-const OBJECT_LABELS: Record<'satellite' | 'shuttle' | 'moon', string> = {
-  satellite: 'Synergy Interview',
-  shuttle: 'Filesift',
+const OBJECT_HEADERS: Record<'satellite' | 'shuttle' | 'moon', string> = {
+  satellite: 'About Me',
+  shuttle: 'Projects',
   moon: 'Moon',
 }
 
@@ -669,7 +669,7 @@ function DetailPanel({
   onClose: () => void
   onClosingComplete: () => void
 }) {
-  const label = OBJECT_LABELS[selectedObject]
+  const label = OBJECT_HEADERS[selectedObject]
   const content = OBJECT_CONTENT[selectedObject]
 
   useEffect(() => {
