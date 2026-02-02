@@ -725,7 +725,7 @@ function Overlay({
   const isClosing = closingObject != null
 
   return (
-    <div className="overlay">
+    <div className={`overlay${showPanel ? ' overlay--panel-open' : ''}`}>
         <div className="overlay-top-left">
           <h1 className="name">Roshun Sunder</h1>
           <p className="overlay-prompt">Click something to learn about it...</p>
