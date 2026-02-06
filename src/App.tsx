@@ -616,7 +616,7 @@ function App() {
           labelFadeOutTimeoutRef.current = null
           setDisplayedLabel(null)
         }, 250)
-      }, 1800)
+      }, 800)
     }
   }, [])
 
@@ -625,6 +625,21 @@ function App() {
       setDisplayedLabel(hoveredLabel)
     }
   }, [hoveredLabel])
+
+  useEffect(() => {
+    if (selectedObject != null) {
+      if (hoverLabelTimeoutRef.current != null) {
+        clearTimeout(hoverLabelTimeoutRef.current)
+        hoverLabelTimeoutRef.current = null
+      }
+      if (labelFadeOutTimeoutRef.current != null) {
+        clearTimeout(labelFadeOutTimeoutRef.current)
+        labelFadeOutTimeoutRef.current = null
+      }
+      setHoveredLabel(null)
+      setDisplayedLabel(null)
+    }
+  }, [selectedObject])
 
   // Loading sequence: show for min time, fade content, then part the screen
   useEffect(() => {
