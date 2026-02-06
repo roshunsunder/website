@@ -1,7 +1,7 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls, Stars, useGLTF } from '@react-three/drei'
 
-import React, { useRef, useState, useEffect, useMemo } from 'react'
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { Group } from 'three'
 import * as THREE from 'three'
@@ -590,6 +590,22 @@ function App() {
   const shuttleRef = useRef<Group>(null)
   const moonRef = useRef<Group>(null)
   const controlsRef = useRef<any>(null)
+  const hoverLabelTimeoutRef = useRef<number | null>(null)
+
+  const handleHoverLabel = useCallback((label: string | null) => {
+    if (hoverLabelTimeoutRef.current != null) {
+      clearTimeout(hoverLabelTimeoutRef.current)
+      hoverLabelTimeoutRef.current = null
+    }
+    if (label != null) {
+      setHoveredLabel(label)
+    } else {
+      hoverLabelTimeoutRef.current = window.setTimeout(() => {
+        setHoveredLabel(null)
+        hoverLabelTimeoutRef.current = null
+      }, 1800)
+    }
+  }, [])
 
   // Loading sequence: show for min time, fade content, then part the screen
   useEffect(() => {
@@ -606,6 +622,14 @@ function App() {
   // Preload font and ensure models are loading on first mount
   useEffect(() => {
     fetch(fontRegular).catch(() => {}) // Preload font into browser cache
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (hoverLabelTimeoutRef.current != null) {
+        clearTimeout(hoverLabelTimeoutRef.current)
+      }
+    }
   }, [])
 
   // Start camera refocus and panel fade-out together; panel unmounts after fade-out
@@ -676,19 +700,19 @@ function App() {
           onClick={handleSatelliteClick} 
           orbitRef={satelliteRef} 
           isSelected={selectedObject === 'satellite'}
-          onHoverLabel={setHoveredLabel}
+          onHoverLabel={handleHoverLabel}
         />
         <SpaceShuttle 
           onClick={handleShuttleClick} 
           orbitRef={shuttleRef} 
           isSelected={selectedObject === 'shuttle'}
-          onHoverLabel={setHoveredLabel}
+          onHoverLabel={handleHoverLabel}
         />
         <Moon 
           onClick={handleMoonClick} 
           orbitRef={moonRef} 
           isSelected={selectedObject === 'moon'}
-          onHoverLabel={setHoveredLabel}
+          onHoverLabel={handleHoverLabel}
         />
         <OrbitControls 
           ref={controlsRef}
