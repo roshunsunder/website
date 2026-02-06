@@ -125,6 +125,8 @@
   left: 50%;
   transform: translateX(-50%);
   top: 10rem;
+  width: max-content;
+  max-width: min(90vw, 40rem);
   font-family: 'JetBrains Mono', monospace;
   font-weight: 100;
   font-size: 2rem;
@@ -133,6 +135,7 @@
   opacity: 0;
   transition: opacity 0.25s ease;
   pointer-events: none;
+  text-align: center;
 }
 
 .overlay-hover-label--visible {

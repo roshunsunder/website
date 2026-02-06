@@ -500,13 +500,15 @@ function DetailPanel({
 function Overlay({
   selectedObject,
   closingObject,
-  hoveredLabel,
+  hoverLabelText,
+  isHoverLabelVisible,
   onClose,
   onClosingComplete,
 }: {
   selectedObject: 'satellite' | 'shuttle' | 'moon' | null
   closingObject: 'satellite' | 'shuttle' | 'moon' | null
-  hoveredLabel: string | null
+  hoverLabelText: string | null
+  isHoverLabelVisible: boolean
   onClose: () => void
   onClosingComplete: () => void
 }) {
@@ -517,10 +519,10 @@ function Overlay({
   return (
     <div className={`overlay${showPanel ? ' overlay--panel-open' : ''}`}>
         <div
-          className={`overlay-hover-label${hoveredLabel != null ? ' overlay-hover-label--visible' : ''}`}
+          className={`overlay-hover-label${isHoverLabelVisible ? ' overlay-hover-label--visible' : ''}`}
           aria-live="polite"
         >
-          {hoveredLabel}
+          {hoverLabelText}
         </div>
         <div className="overlay-top-left">
           <h1 className="name">Roshun Sunder</h1>
@@ -585,27 +587,44 @@ function App() {
   const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
   const [closingObject, setClosingObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
+  const [displayedLabel, setDisplayedLabel] = useState<string | null>(null)
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('visible')
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
   const moonRef = useRef<Group>(null)
   const controlsRef = useRef<any>(null)
   const hoverLabelTimeoutRef = useRef<number | null>(null)
+  const labelFadeOutTimeoutRef = useRef<number | null>(null)
 
   const handleHoverLabel = useCallback((label: string | null) => {
     if (hoverLabelTimeoutRef.current != null) {
       clearTimeout(hoverLabelTimeoutRef.current)
       hoverLabelTimeoutRef.current = null
     }
+    if (labelFadeOutTimeoutRef.current != null) {
+      clearTimeout(labelFadeOutTimeoutRef.current)
+      labelFadeOutTimeoutRef.current = null
+    }
     if (label != null) {
       setHoveredLabel(label)
+      setDisplayedLabel(label)
     } else {
       hoverLabelTimeoutRef.current = window.setTimeout(() => {
-        setHoveredLabel(null)
         hoverLabelTimeoutRef.current = null
+        setHoveredLabel(null)
+        labelFadeOutTimeoutRef.current = window.setTimeout(() => {
+          labelFadeOutTimeoutRef.current = null
+          setDisplayedLabel(null)
+        }, 250)
       }, 1800)
     }
   }, [])
+
+  useEffect(() => {
+    if (hoveredLabel != null) {
+      setDisplayedLabel(hoveredLabel)
+    }
+  }, [hoveredLabel])
 
   // Loading sequence: show for min time, fade content, then part the screen
   useEffect(() => {
@@ -626,9 +645,8 @@ function App() {
 
   useEffect(() => {
     return () => {
-      if (hoverLabelTimeoutRef.current != null) {
-        clearTimeout(hoverLabelTimeoutRef.current)
-      }
+      if (hoverLabelTimeoutRef.current != null) clearTimeout(hoverLabelTimeoutRef.current)
+      if (labelFadeOutTimeoutRef.current != null) clearTimeout(labelFadeOutTimeoutRef.current)
     }
   }, [])
 
@@ -730,7 +748,8 @@ function App() {
       <Overlay
         selectedObject={selectedObject}
         closingObject={closingObject}
-        hoveredLabel={hoveredLabel}
+        hoverLabelText={displayedLabel}
+        isHoverLabelVisible={hoveredLabel != null}
         onClose={closePanel}
         onClosingComplete={handleClosingComplete}
       />
