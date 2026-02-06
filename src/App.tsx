@@ -659,6 +659,11 @@ const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon', string> = {
 
 const DETAIL_PANEL_FADE_OUT_MS = 400
 
+const LOADING_MIN_MS = 500
+const LOADING_FADE_MS = 400
+const LOADING_BUFFER_MS = 300
+const LOADING_PART_MS = 1000
+
 function DetailPanel({
   selectedObject,
   isClosing,
@@ -767,13 +772,45 @@ function Overlay({
   );
 }
 
+type LoadingPhase = 'visible' | 'fading' | 'parting' | 'done'
+
+function LoadingScreen({ phase }: { phase: LoadingPhase }) {
+  if (phase === 'done') return null
+  const contentFaded = phase === 'fading' || phase === 'parting'
+  const parting = phase === 'parting'
+
+  return (
+    <div className="loading-screen" aria-hidden>
+      <div className={`loading-screen__half loading-screen__half--left${parting ? ' loading-screen__half--parting' : ''}`} />
+      <div className={`loading-screen__half loading-screen__half--right${parting ? ' loading-screen__half--parting' : ''}`} />
+      <div className={`loading-screen__content${contentFaded ? ' loading-screen__content--faded' : ''}`}>
+        <div className="loading-screen__spinner" />
+        <span className="loading-screen__text">Loading</span>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
   const [closingObject, setClosingObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
+  const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('visible')
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
   const moonRef = useRef<Group>(null)
   const controlsRef = useRef<any>(null)
+
+  // Loading sequence: show for min time, fade content, then part the screen
+  useEffect(() => {
+    const t1 = setTimeout(() => setLoadingPhase('fading'), LOADING_MIN_MS)
+    const t2 = setTimeout(() => setLoadingPhase('parting'), LOADING_MIN_MS + LOADING_FADE_MS + LOADING_BUFFER_MS)
+    const t3 = setTimeout(() => setLoadingPhase('done'), LOADING_MIN_MS + LOADING_FADE_MS + LOADING_BUFFER_MS + LOADING_PART_MS)
+    return () => {
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
+    }
+  }, [])
 
   // Preload font and ensure models are loading on first mount
   useEffect(() => {
@@ -831,6 +868,7 @@ function App() {
 
   return (
     <div className="canvas-container">
+      <LoadingScreen phase={loadingPhase} />
       <Canvas 
         camera={{ position: [0, 0, 45], fov: 50 }} 
         gl={{ 
