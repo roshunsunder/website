@@ -313,7 +313,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
         </group>
       </group>
       <HoverPill 
-        text="About Me" 
+        text="Work Experience" 
         objectRef={orbitRef} 
         isHovered={isHovered}
         isSelected={isSelected}
@@ -490,7 +490,7 @@ function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef
         </group>
       </group>
       <HoverPill
-        text="Moon"
+        text="About Me"
         objectRef={orbitRef}
         isHovered={isHovered}
         isSelected={isSelected}
@@ -646,9 +646,9 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 
 // Labels and markdown content per selectable object (edit content here)
 const OBJECT_HEADERS: Record<'satellite' | 'shuttle' | 'moon', string> = {
-  satellite: 'About Me',
+  satellite: 'Work Experience',
   shuttle: 'Projects',
-  moon: 'Moon',
+  moon: 'About Me',
 }
 
 const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon', string> = {
