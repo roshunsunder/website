@@ -237,6 +237,7 @@ function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
 
 function Earth({ onClick }: { onClick: () => void }) {
   const { scene } = useGLTF(sceneGlb)
+  const clonedScene = useMemo(() => scene.clone(), [scene])
   const groupRef = useRef<Group>(null)
 
   useFrame((_, delta) => {
@@ -246,7 +247,7 @@ function Earth({ onClick }: { onClick: () => void }) {
 
   return (
     <group ref={groupRef} onClick={onClick}>
-      <primitive object={scene} />
+      <primitive object={clonedScene} />
       {/* Add the glow effect - adjust earthRadius to match your model */}
       <EarthGlow earthRadius={8} />
     </group>
@@ -255,6 +256,7 @@ function Earth({ onClick }: { onClick: () => void }) {
 
 function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
   const { scene } = useGLTF(satelliteGlb)
+  const clonedScene = useMemo(() => scene.clone(), [scene])
   const satelliteGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(Math.PI / 4) // Start at 45 degrees (in radians)
@@ -309,7 +311,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
     <>
       <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
         <group ref={satelliteGroupRef} scale={satelliteScale}>
-          <primitive object={scene} />
+          <primitive object={clonedScene} />
         </group>
       </group>
       <HoverPill 
@@ -326,6 +328,7 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
 
 function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
   const { scene } = useGLTF(shuttleGlb)
+  const clonedScene = useMemo(() => scene.clone(), [scene])
   const shuttleGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(0) // Start at 0 degrees (in radians)
@@ -410,7 +413,7 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
     <>
       <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
         <group ref={shuttleGroupRef} scale={shuttleScale}>
-          <primitive object={scene} />
+          <primitive object={clonedScene} />
         </group>
       </group>
       <HoverPill 
@@ -428,6 +431,8 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
 function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
   const moonScene = useGLTF(moonGlb).scene
   const kerbalScene = useGLTF(kerbalGlb).scene
+  const clonedMoonScene = useMemo(() => moonScene.clone(), [moonScene])
+  const clonedKerbalScene = useMemo(() => kerbalScene.clone(), [kerbalScene])
   const moonGroupRef = useRef<Group>(null)
   const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(Math.PI)
@@ -482,10 +487,10 @@ function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef
     <>
       <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
         <group ref={moonGroupRef} scale={moonScale}>
-          <primitive object={moonScene} />
+          <primitive object={clonedMoonScene} />
           {/* Kerbal is now a CHILD of the moon group - he moves/rotates with it */}
           <group position={kerbalPosition} scale={kerbalScale / moonScale} rotation={[0, 0, -1 * Math.PI / 2.8]}>
-            <primitive object={kerbalScene} />
+            <primitive object={clonedKerbalScene} />
           </group>
         </group>
       </group>
