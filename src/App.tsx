@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, OrbitControls, Stars, useGLTF, Text } from '@react-three/drei'
+import { Environment, OrbitControls, Stars, useGLTF } from '@react-three/drei'
 
 import React, { useRef, useState, useEffect, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -24,178 +24,6 @@ useGLTF.preload(satelliteGlb)
 useGLTF.preload(shuttleGlb)
 useGLTF.preload(kerbalGlb)
 useGLTF.preload(moonGlb)
-
-// Helper function to create a rounded rectangle shape
-function createRoundedRectShape(width: number, height: number, radius: number) {
-  const shape = new THREE.Shape()
-  const x = -width / 2
-  const y = -height / 2
-  
-  shape.moveTo(x + radius, y)
-  shape.lineTo(x + width - radius, y)
-  shape.quadraticCurveTo(x + width, y, x + width, y + radius)
-  shape.lineTo(x + width, y + height - radius)
-  shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height)
-  shape.lineTo(x + radius, y + height)
-  shape.quadraticCurveTo(x, y + height, x, y + height - radius)
-  shape.lineTo(x, y + radius)
-  shape.quadraticCurveTo(x, y, x + radius, y)
-  
-  return shape
-}
-
-function HoverPill({ 
-  text, 
-  objectRef, 
-  isHovered, 
-  isSelected,
-  distance = 5,
-  onHoverEnd 
-}: { 
-  text: string
-  objectRef: React.RefObject<Group | null>
-  isHovered: boolean
-  isSelected: boolean
-  distance?: number
-  onHoverEnd: () => void
-}) {
-  const pillRef = useRef<THREE.Group>(null)
-  const { camera } = useThree()
-  const opacityRef = useRef(0)
-  const timeoutRef = useRef<number | null>(null)
-  const [isVisible, setIsVisible] = useState(false)
-  const wasVisible = useRef(false)
-  
-  // Estimate text width based on character count (monospaced font)
-  const textWidth = useMemo(() => text.length * 0.6, [text])
-  const pillWidth = textWidth + 0.6 // Reduced padding
-  const pillHeight = 1.2
-  const pillRadius = 0.6
-  
-  // Create pill geometry and material - MEMOIZED to prevent recreation
-  const pillGeometry = useMemo(() => {
-    const shape = createRoundedRectShape(pillWidth, pillHeight, pillRadius)
-    const geometry = new THREE.ShapeGeometry(shape)
-    return geometry
-  }, [pillWidth, pillHeight, pillRadius])
-
-  const pillMaterial = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      color: "#000000",
-      opacity: 0.7,
-      transparent: true,
-      depthWrite: false
-    })
-  }, [])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      pillGeometry.dispose()
-      pillMaterial.dispose()
-    }
-  }, [pillGeometry, pillMaterial])
-
-  useEffect(() => {
-    if (isSelected) {
-      setIsVisible(false)
-      wasVisible.current = false
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
-      return
-    }
-
-    if (isHovered) {
-      // Clear any pending hide timeout
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
-      }
-      
-      // Only reset opacity if we're not already visible
-      if (!wasVisible.current) {
-        opacityRef.current = 0
-      }
-      
-      setIsVisible(true)
-      wasVisible.current = true
-    } else if (wasVisible.current) {
-      // Only start fade-out timer if we were visible
-      timeoutRef.current = setTimeout(() => {
-        setIsVisible(false)
-        wasVisible.current = false
-        onHoverEnd()
-      }, 3000)
-    }
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [isHovered, isSelected, onHoverEnd])
-
-  useFrame((_, delta) => {
-    if (!pillRef.current || !objectRef.current || !isVisible || isSelected) return
-
-    // Make pill always face the camera (billboard effect)
-    pillRef.current.lookAt(camera.position)
-
-    // Get object world position
-    const objectPos = new THREE.Vector3()
-    objectRef.current.getWorldPosition(objectPos)
-    
-    // Calculate direction from Earth (origin) to object
-    const direction = objectPos.clone().normalize()
-    
-    // Fade in/out animation
-    if (isHovered) {
-      opacityRef.current = Math.min(opacityRef.current + delta * 3, 1)
-    } else {
-      // Fade out after hover ends
-      opacityRef.current = Math.max(opacityRef.current - delta * 0.5, 0)
-      if (opacityRef.current <= 0) {
-        setIsVisible(false)
-      }
-    }
-
-    // Position pill on opposite side of Earth from object
-    // Line: Earth (0,0,0) -> Object -> Pill
-    const pillPosition = objectPos.clone().add(direction.multiplyScalar(distance))
-    pillRef.current.position.copy(pillPosition)
-
-    // Update pill material opacity
-    pillMaterial.opacity = opacityRef.current * 0.7
-  })
-
-  if (!isVisible || isSelected) {
-    return null
-  }
-
-  return (
-    <group ref={pillRef}>
-      {/* Pill background */}
-      <mesh geometry={pillGeometry} material={pillMaterial} renderOrder={999} />
-      {/* Text */}
-      <Text
-        fontSize={1.0}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.05}
-        outlineColor="#000000"
-        renderOrder={1000}
-        position={[0, 0, 0.01]} // Slightly in front of pill
-        font={fontRegular}
-        characters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>? "
-      >
-        {text}
-      </Text>
-    </group>
-  )
-}
 
 // Glow sphere component - creates the soft Gaussian glow around Earth
 function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
@@ -254,11 +82,10 @@ function Earth({ onClick }: { onClick: () => void }) {
   )
 }
 
-function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
+function Satellite({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean, onHoverLabel?: (label: string | null) => void }) {
   const { scene } = useGLTF(satelliteGlb)
   const clonedScene = useMemo(() => scene.clone(), [scene])
   const satelliteGroupRef = useRef<Group>(null)
-  const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(Math.PI / 4) // Start at 45 degrees (in radians)
   const orbitRadius = 15
   const orbitSpeed = 0.3
@@ -291,46 +118,28 @@ function Satellite({ onClick, orbitRef, isSelected }: { onClick: () => void, orb
     if (isSelected) return // Disable hover when selected
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
-    setIsHovered(true)
+    onHoverLabel?.('Work Experience')
   }
 
   const handlePointerOut = () => {
     if (isSelected) return // Disable hover when selected
     document.body.style.cursor = 'auto'
-    setIsHovered(false)
+    onHoverLabel?.(null)
   }
 
-  // Reset hover state when selected
-  useEffect(() => {
-    if (isSelected) {
-      setIsHovered(false)
-    }
-  }, [isSelected])
-
   return (
-    <>
-      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-        <group ref={satelliteGroupRef} scale={satelliteScale}>
-          <primitive object={clonedScene} />
-        </group>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+      <group ref={satelliteGroupRef} scale={satelliteScale}>
+        <primitive object={clonedScene} />
       </group>
-      <HoverPill 
-        text="Work Experience" 
-        objectRef={orbitRef} 
-        isHovered={isHovered}
-        isSelected={isSelected}
-        distance={5}
-        onHoverEnd={() => setIsHovered(false)}
-      />
-    </>
+    </group>
   )
 }
 
-function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
+function SpaceShuttle({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean, onHoverLabel?: (label: string | null) => void }) {
   const { scene } = useGLTF(shuttleGlb)
   const clonedScene = useMemo(() => scene.clone(), [scene])
   const shuttleGroupRef = useRef<Group>(null)
-  const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(0) // Start at 0 degrees (in radians)
   const orbitRadius = 10 // Different radius than satellite
   const orbitSpeed = 0.2 // Slower orbit speed
@@ -393,48 +202,30 @@ function SpaceShuttle({ onClick, orbitRef, isSelected }: { onClick: () => void, 
     if (isSelected) return // Disable hover when selected
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
-    setIsHovered(true)
+    onHoverLabel?.('Projects')
   }
 
   const handlePointerOut = () => {
     if (isSelected) return // Disable hover when selected
     document.body.style.cursor = 'auto'
-    setIsHovered(false)
+    onHoverLabel?.(null)
   }
 
-  // Reset hover state when selected
-  useEffect(() => {
-    if (isSelected) {
-      setIsHovered(false)
-    }
-  }, [isSelected])
-
   return (
-    <>
-      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-        <group ref={shuttleGroupRef} scale={shuttleScale}>
-          <primitive object={clonedScene} />
-        </group>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+      <group ref={shuttleGroupRef} scale={shuttleScale}>
+        <primitive object={clonedScene} />
       </group>
-      <HoverPill 
-        text="Projects" 
-        objectRef={orbitRef} 
-        isHovered={isHovered}
-        isSelected={isSelected}
-        distance={3}
-        onHoverEnd={() => setIsHovered(false)}
-      />
-    </>
+    </group>
   )
 }
 
-function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean }) {
+function Moon({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean, onHoverLabel?: (label: string | null) => void }) {
   const moonScene = useGLTF(moonGlb).scene
   const kerbalScene = useGLTF(kerbalGlb).scene
   const clonedMoonScene = useMemo(() => moonScene.clone(), [moonScene])
   const clonedKerbalScene = useMemo(() => kerbalScene.clone(), [kerbalScene])
   const moonGroupRef = useRef<Group>(null)
-  const [isHovered, setIsHovered] = useState(false)
   const angleRef = useRef(Math.PI)
   const orbitRadius = 25
   const orbitSpeed = 0.12
@@ -470,39 +261,25 @@ function Moon({ onClick, orbitRef, isSelected }: { onClick: () => void, orbitRef
     if (isSelected) return
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
-    setIsHovered(true)
+    onHoverLabel?.('About Me')
   }
 
   const handlePointerOut = () => {
     if (isSelected) return
     document.body.style.cursor = 'auto'
-    setIsHovered(false)
+    onHoverLabel?.(null)
   }
 
-  useEffect(() => {
-    if (isSelected) setIsHovered(false)
-  }, [isSelected])
-
   return (
-    <>
-      <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
-        <group ref={moonGroupRef} scale={moonScale}>
-          <primitive object={clonedMoonScene} />
-          {/* Kerbal is now a CHILD of the moon group - he moves/rotates with it */}
-          <group position={kerbalPosition} scale={kerbalScale / moonScale} rotation={[0, 0, -1 * Math.PI / 2.8]}>
-            <primitive object={clonedKerbalScene} />
-          </group>
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+      <group ref={moonGroupRef} scale={moonScale}>
+        <primitive object={clonedMoonScene} />
+        {/* Kerbal is now a CHILD of the moon group - he moves/rotates with it */}
+        <group position={kerbalPosition} scale={kerbalScale / moonScale} rotation={[0, 0, -1 * Math.PI / 2.8]}>
+          <primitive object={clonedKerbalScene} />
         </group>
       </group>
-      <HoverPill
-        text="About Me"
-        objectRef={orbitRef}
-        isHovered={isHovered}
-        isSelected={isSelected}
-        distance={5}
-        onHoverEnd={() => setIsHovered(false)}
-      />
-    </>
+    </group>
   )
 }
 
@@ -723,11 +500,13 @@ function DetailPanel({
 function Overlay({
   selectedObject,
   closingObject,
+  hoveredLabel,
   onClose,
   onClosingComplete,
 }: {
   selectedObject: 'satellite' | 'shuttle' | 'moon' | null
   closingObject: 'satellite' | 'shuttle' | 'moon' | null
+  hoveredLabel: string | null
   onClose: () => void
   onClosingComplete: () => void
 }) {
@@ -737,6 +516,12 @@ function Overlay({
 
   return (
     <div className={`overlay${showPanel ? ' overlay--panel-open' : ''}`}>
+        <div
+          className={`overlay-hover-label${hoveredLabel != null ? ' overlay-hover-label--visible' : ''}`}
+          aria-live="polite"
+        >
+          {hoveredLabel}
+        </div>
         <div className="overlay-top-left">
           <h1 className="name">Roshun Sunder</h1>
           <p className="overlay-prompt">Click something to learn about it...</p>
@@ -799,6 +584,7 @@ function LoadingScreen({ phase }: { phase: LoadingPhase }) {
 function App() {
   const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
   const [closingObject, setClosingObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
+  const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('visible')
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
@@ -890,16 +676,19 @@ function App() {
           onClick={handleSatelliteClick} 
           orbitRef={satelliteRef} 
           isSelected={selectedObject === 'satellite'}
+          onHoverLabel={setHoveredLabel}
         />
         <SpaceShuttle 
           onClick={handleShuttleClick} 
           orbitRef={shuttleRef} 
           isSelected={selectedObject === 'shuttle'}
+          onHoverLabel={setHoveredLabel}
         />
         <Moon 
           onClick={handleMoonClick} 
           orbitRef={moonRef} 
           isSelected={selectedObject === 'moon'}
+          onHoverLabel={setHoveredLabel}
         />
         <OrbitControls 
           ref={controlsRef}
@@ -917,6 +706,7 @@ function App() {
       <Overlay
         selectedObject={selectedObject}
         closingObject={closingObject}
+        hoveredLabel={hoveredLabel}
         onClose={closePanel}
         onClosingComplete={handleClosingComplete}
       />
