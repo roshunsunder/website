@@ -901,6 +901,7 @@ function App() {
           enableZoom={true} 
           enablePan={true} 
           enableRotate={true}
+          rotateSpeed={0.5}
           onStart={handleControlsStart}
           makeDefault
         />
