@@ -187,8 +187,8 @@
   position: relative;
   margin: 2rem;
   margin-left: 1rem;
-  flex: 1;
-  min-height: 0;
+  align-self: flex-start;
+  max-height: calc(100vh - 4rem);
   display: flex;
   flex-direction: column;
   border-radius: 8px;
@@ -232,8 +232,8 @@
 }
 
 .detail-panel-body {
-  flex: 1;
-  min-height: 0;
+  height: auto;
+  max-height: calc(100vh - 10rem);
   overflow-y: auto;
   background: rgba(48, 48, 48, 0.85);
   color: rgba(255, 255, 255, 0.9);
@@ -276,8 +276,9 @@
   margin-bottom: 0.75rem;
 }
 
-.detail-panel-body .markdown-content p:last-child {
-  margin-bottom: 0;
+/* Match bottom spacing to header-to-first-line: top = padding (1.25rem) + first block margin-top (1rem for headings). */
+.detail-panel-body .markdown-content > *:last-child {
+  margin-bottom: 2rem;
 }
 
 .detail-panel-body .markdown-content img {
