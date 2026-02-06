@@ -1,0 +1,8 @@
+# Bloomberg LP
+I'm part of a small engineering team building enterprise trading workflow solutions for sell-side institutions. Most recently, I spent the past year leading the development of a next-generation inquiry management blotter that's being integrated into Bloomberg's Trade Order Management Solution (TOMS).
+This project required architecting a multi-tenant system from scratch to handle real-time data ingestion from four different sources, normalize and process high-volume streams, and render them in a performant UI grid. The stack is primarily C++ microservices (using Bloomberg's internal frameworks like BAS and DMP) with a TypeScript frontend, all designed to scale beyond our previous user loads while maintaining sub-second responsiveness.
+
+Beyond feature development, I've focused heavily on infrastructure and reliability. I modernized our build pipeline by migrating legacy manual processes to CMake and establishing automated CI/CD workflows, which became the standard for all new applications on the team. More recently, I've been implementing comprehensive observability—designing metrics collection, instrumenting distributed tracing, and building monitoring dashboards to support production operations ahead of our Q1 client release.
+
+
+The work involves constant collaboration with product teams to translate complex trading workflows into technical requirements, architectural decision-making around scalability and performance, and hands-on implementation across the entire stack—from database migrations to UI components.
