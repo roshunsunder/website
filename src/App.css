@@ -1,0 +1,406 @@
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-Thin.ttf') format('truetype');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./assets/fonts/JetBrainsMono-ThinItalic.ttf') format('truetype');
+  font-weight: 100;
+  font-style: italic;
+}
+
+.canvas-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  position: relative;
+}
+
+/* Loading screen: opaque dark grey, then fade content and part in the middle */
+.loading-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.loading-screen__half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(50% + 1px);
+  background-color: #1c1c1c;
+  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  backface-visibility: hidden;
+}
+
+.loading-screen__half--left {
+  left: 0;
+}
+
+.loading-screen__half--right {
+  right: 0;
+}
+
+.loading-screen__half--parting.loading-screen__half--left {
+  transform: translateX(-100%);
+}
+
+.loading-screen__half--parting.loading-screen__half--right {
+  transform: translateX(100%);
+}
+
+.loading-screen__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  pointer-events: none;
+  transition: opacity 0.4s ease-out;
+}
+
+.loading-screen__content--faded {
+  opacity: 0;
+}
+
+.loading-screen__text {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.15em;
+}
+
+.loading-screen__spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  animation: overlay-fade-in 1.2s ease-out forwards;
+}
+
+.overlay-hover-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 10rem;
+  width: max-content;
+  max-width: min(90vw, 40rem);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-size: 2rem;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  text-align: center;
+}
+
+.overlay-hover-label--visible {
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .overlay-hover-label {
+    top: 10rem;
+  }
+}
+
+.overlay-top-left {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: opacity 0.35s ease;
+}
+
+@media (max-width: 768px) {
+  .overlay--panel-open .overlay-top-left,
+  .overlay--panel-open .overlay-bottom-left {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.overlay-bottom-left {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  transition: opacity 0.35s ease;
+}
+
+.name {
+  font-size: 3rem;
+  font-weight: 100;
+  color: #ffffff;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-prompt {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-style: italic;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.icon-link {
+  pointer-events: auto;
+  color: #ffffff;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-link:hover {
+  opacity: 0.7;
+  transform: scale(1.1);
+}
+
+.icon-link svg {
+  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Detail panel (right half when an object is selected; centered on narrow viewports) */
+.detail-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  animation: detail-panel-fade-in 0.4s ease-out 1.2s forwards;
+}
+
+@media (max-width: 768px) {
+  .detail-panel {
+    left: 0;
+    right: 0;
+    width: 100%;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .detail-panel-box {
+    align-self: center;
+    width: calc(100% - 2rem);
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .detail-panel-header {
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .detail-panel-body {
+    font-size: 0.875rem;
+    padding: 1rem;
+  }
+}
+
+.detail-panel.detail-panel--closing {
+  animation: detail-panel-fade-out 0.4s ease-out forwards;
+}
+
+@keyframes detail-panel-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes detail-panel-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.detail-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.detail-panel-box {
+  position: relative;
+  margin: 2rem;
+  margin-left: 1rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.detail-panel-header {
+  flex-shrink: 0;
+  background: #2a2a2a;
+  color: #ffffff;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-size: 1.1rem;
+}
+
+.detail-panel-close {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.detail-panel-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.detail-panel-body {
+  height: auto;
+  max-height: calc(100vh - 10rem);
+  overflow-y: auto;
+  background: rgba(48, 48, 48, 0.85);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 100;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  /* Sleek scrollbar to match panel theme */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.detail-panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-panel-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.detail-panel-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.detail-panel-body .markdown-content h1,
+.detail-panel-body .markdown-content h2,
+.detail-panel-body .markdown-content h3 {
+  font-weight: 100;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.detail-panel-body .markdown-content p {
+  margin-bottom: 0.75rem;
+}
+
+/* Match bottom spacing to header-to-first-line: top = padding (1.25rem) + first block margin-top (1rem for headings). */
+.detail-panel-body .markdown-content > *:last-child {
+  margin-bottom: 2rem;
+}
+
+.detail-panel-body .markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.detail-panel-body .markdown-content ul,
+.detail-panel-body .markdown-content ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.detail-panel-body .markdown-content a {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: underline;
+}
+
+.detail-panel-body .markdown-content a:hover {
+  color: #ffffff;
+}
