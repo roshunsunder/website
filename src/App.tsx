@@ -5,6 +5,7 @@ import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { Group } from 'three'
 import * as THREE from 'three'
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils'
 import './App.css'
 
 import sceneGlb from './assets/models/scene.glb?url'
@@ -49,10 +50,10 @@ function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
       {layers.map((layer, i) => (
         <mesh key={i} scale={layer.scale}>
           <sphereGeometry args={[earthRadius, 24, 24]} />
-          <meshBasicMaterial 
+          <meshBasicMaterial
             color={0x4a9eff}
-            transparent 
-            opacity={layer.opacity} 
+            transparent
+            opacity={layer.opacity}
             blending={THREE.AdditiveBlending}
             side={THREE.BackSide}
             depthWrite={false}
@@ -95,16 +96,16 @@ function Satellite({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: (
   useFrame((_, delta) => {
     if (!orbitRef.current || !satelliteGroupRef.current) return
     angleRef.current += delta * orbitSpeed
-    
+
     // Calculate circular orbit position
     const x = Math.cos(angleRef.current) * orbitRadius
     const z = Math.sin(angleRef.current) * orbitRadius
-    
+
     // Apply orbital plane tilt
     orbitRef.current.position.x = x
     orbitRef.current.position.y = Math.sin(orbitTiltX) * z
     orbitRef.current.position.z = Math.cos(orbitTiltX) * z
-    
+
     // Rotate the satellite itself
     satelliteGroupRef.current.rotation.y += delta * 0.5
   })
@@ -150,20 +151,20 @@ function SpaceShuttle({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick
   useFrame((_, delta) => {
     if (!orbitRef.current || !shuttleGroupRef.current) return
     angleRef.current += delta * orbitSpeed
-    
+
     // Calculate circular orbit position
     const x = Math.cos(angleRef.current) * orbitRadius
     const z = Math.sin(angleRef.current) * orbitRadius
-    
+
     // Apply orbital plane tilt
     orbitRef.current.position.x = x
     orbitRef.current.position.y = Math.sin(orbitTiltX) * z
     orbitRef.current.position.z = Math.cos(orbitTiltX) * z
-    
+
     // Make shuttle's bottom face Earth (center) - smooth rotation using quaternions
     const shuttlePos = orbitRef.current.position.clone()
     const directionToEarth = new THREE.Vector3(0, 0, 0).sub(shuttlePos).normalize()
-    
+
     // Calculate right vector (tangent to orbit, pointing in direction of motion)
     // This gives us a stable reference frame that follows the orbit
     const orbitDirection = new THREE.Vector3(-Math.sin(angleRef.current), 0, Math.cos(angleRef.current))
@@ -172,23 +173,23 @@ function SpaceShuttle({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick
       Math.sin(orbitTiltX) * orbitDirection.z,
       Math.cos(orbitTiltX) * orbitDirection.z
     ).normalize()
-    
+
     // Right vector is perpendicular to both direction to Earth and orbit direction
     const right = new THREE.Vector3().crossVectors(tiltedOrbitDirection, directionToEarth).normalize()
-    
+
     // If right is too small (near poles), use a fallback
     if (right.length() < 0.1) {
       right.crossVectors(new THREE.Vector3(1, 0, 0), directionToEarth).normalize()
     }
-    
+
     // Create rotation matrix where -Y (bottom) points at Earth
     const bottom = directionToEarth.clone().negate()
     const forward = new THREE.Vector3().crossVectors(right, bottom).normalize()
-    
+
     const matrix = new THREE.Matrix4()
     matrix.makeBasis(right, bottom, forward)
     targetQuaternion.current.setFromRotationMatrix(matrix)
-    
+
     // Smoothly interpolate to target rotation to avoid sudden flips
     shuttleGroupRef.current.quaternion.slerp(targetQuaternion.current, 0.15)
   })
@@ -224,7 +225,7 @@ function Moon({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => 
   const moonScene = useGLTF(moonGlb).scene
   const kerbalScene = useGLTF(kerbalGlb).scene
   const clonedMoonScene = useMemo(() => moonScene.clone(), [moonScene])
-  const clonedKerbalScene = useMemo(() => kerbalScene.clone(), [kerbalScene])
+  const clonedKerbalScene = useMemo(() => SkeletonUtils.clone(kerbalScene), [kerbalScene])
   const moonGroupRef = useRef<Group>(null)
   const angleRef = useRef(Math.PI)
   const orbitRadius = 25
@@ -240,14 +241,14 @@ function Moon({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => 
   useFrame((_, delta) => {
     if (!orbitRef.current || !moonGroupRef.current) return
     angleRef.current += delta * orbitSpeed
-  
+
     const x = Math.cos(angleRef.current) * orbitRadius
     const z = Math.sin(angleRef.current) * orbitRadius
-  
+
     orbitRef.current.position.x = x
     orbitRef.current.position.y = Math.sin(orbitTiltX) * z
     orbitRef.current.position.z = Math.cos(orbitTiltX) * z
-  
+
     // Just rotate the moon - Kerbal will naturally move with it
     moonGroupRef.current.rotation.y += delta * 0.2
   })
@@ -350,11 +351,11 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
       centerTransitionProgress.current = Math.min(centerTransitionProgress.current + delta * 0.6, 1)
       const t = centerTransitionProgress.current
       const smoothT = t * t * (3 - 2 * t) // Smoothstep interpolation
-      
+
       // Lerp controls target from start position to center
       controlsRef.current.target.lerpVectors(startTargetPosition.current, new THREE.Vector3(0, 0, 0), smoothT)
       controlsRef.current.update()
-      
+
       if (centerTransitionProgress.current >= 1) {
         isTransitioningToCenter.current = false
       }
@@ -367,20 +368,20 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
     if (!targetRef?.current || !isFollowing) {
       return
     }
-  
+
     const targetPos = targetRef.current.position
     const distance = 12
-  
+
     // Calculate direction from Earth (center) to object
     const directionFromEarth = targetPos.clone().normalize()
-  
+
     // Position camera behind the object (relative to Earth)
     targetPosition.current.copy(targetPos).add(directionFromEarth.clone().multiplyScalar(distance))
-  
+
     // Calculate what the camera's orientation WILL be when looking at the object
     // This gives us stable right/up vectors that don't depend on current camera state
     const targetForward = targetPos.clone().sub(targetPosition.current).normalize()
-    
+
     // Use a consistent world up, but handle the pole case
     let worldUp = new THREE.Vector3(0, 1, 0)
     const dot = Math.abs(targetForward.dot(worldUp))
@@ -390,15 +391,15 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
       const blend = (dot - 0.9) / 0.1 // 0 at dot=0.9, 1 at dot=1.0
       worldUp.lerp(altUp, blend)
     }
-  
+
     const targetRight = new THREE.Vector3().crossVectors(targetForward, worldUp).normalize()
     const targetUp = new THREE.Vector3().crossVectors(targetRight, targetForward).normalize()
-  
+
     // Offset the look-at target; reduce horizontal offset on narrow viewports so object stays centered
     const rightScalar = getRightOffsetScalar(size.width)
     const lookAtOffset = targetRight.clone().multiplyScalar(rightScalar).add(targetUp.clone().multiplyScalar(2))
     targetLookAt.current.copy(targetPos).add(lookAtOffset)
-  
+
     if (!isTransitioning.current) {
       isTransitioning.current = true
       transitionProgress.current = 0
@@ -412,10 +413,10 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 
     // Lerp camera position from start to target
     camera.position.lerpVectors(startPosition.current, targetPosition.current, smoothT)
-    
+
     // Make camera look at target
     camera.lookAt(targetLookAt.current)
-    
+
     // Update controls target
     if (controlsRef.current) {
       controlsRef.current.target.lerp(targetLookAt.current, smoothT)
@@ -518,49 +519,49 @@ function Overlay({
 
   return (
     <div className={`overlay${showPanel ? ' overlay--panel-open' : ''}`}>
-        <div
-          className={`overlay-hover-label${isHoverLabelVisible ? ' overlay-hover-label--visible' : ''}`}
-          aria-live="polite"
-        >
-          {hoverLabelText}
-        </div>
-        <div className="overlay-top-left">
-          <h1 className="name">Roshun Sunder</h1>
-          <p className="overlay-prompt">Click something to learn about it...</p>
-        </div>
-        <div className="overlay-bottom-left">
-          <a 
-            href="https://www.linkedin.com/in/roshunsunder/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="icon-link"
-            aria-label="LinkedIn"
-          >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-            </svg>
-          </a>
-          <a 
-            href="https://github.com/roshunsunder" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="icon-link"
-            aria-label="GitHub"
-          >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-          </a>
-        </div>
-        {showPanel && displayObject != null && (
-          <DetailPanel
-            selectedObject={displayObject}
-            isClosing={isClosing}
-            onClose={onClose}
-            onClosingComplete={onClosingComplete}
-          />
-        )}
+      <div
+        className={`overlay-hover-label${isHoverLabelVisible ? ' overlay-hover-label--visible' : ''}`}
+        aria-live="polite"
+      >
+        {hoverLabelText}
       </div>
+      <div className="overlay-top-left">
+        <h1 className="name">Roshun Sunder</h1>
+        <p className="overlay-prompt">Click something to learn about it...</p>
+      </div>
+      <div className="overlay-bottom-left">
+        <a
+          href="https://www.linkedin.com/in/roshunsunder/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="icon-link"
+          aria-label="LinkedIn"
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+          </svg>
+        </a>
+        <a
+          href="https://github.com/roshunsunder"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="icon-link"
+          aria-label="GitHub"
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+          </svg>
+        </a>
+      </div>
+      {showPanel && displayObject != null && (
+        <DetailPanel
+          selectedObject={displayObject}
+          isClosing={isClosing}
+          onClose={onClose}
+          onClosingComplete={onClosingComplete}
+        />
+      )}
+    </div>
   );
 }
 
@@ -655,7 +656,7 @@ function App() {
 
   // Preload font and ensure models are loading on first mount
   useEffect(() => {
-    fetch(fontRegular).catch(() => {}) // Preload font into browser cache
+    fetch(fontRegular).catch(() => { }) // Preload font into browser cache
   }, [])
 
   useEffect(() => {
@@ -710,16 +711,16 @@ function App() {
 
   const targetRef =
     selectedObject === 'satellite' ? satelliteRef
-    : selectedObject === 'shuttle' ? shuttleRef
-    : selectedObject === 'moon' ? moonRef
-    : null
+      : selectedObject === 'shuttle' ? shuttleRef
+        : selectedObject === 'moon' ? moonRef
+          : null
 
   return (
     <div className="canvas-container">
       <LoadingScreen phase={loadingPhase} />
-      <Canvas 
-        camera={{ position: [0, 0, 45], fov: 50 }} 
-        gl={{ 
+      <Canvas
+        camera={{ position: [0, 0, 45], fov: 50 }}
+        gl={{
           toneMappingExposure: 0.5,
           preserveDrawingBuffer: false, // Helps prevent context loss
           powerPreference: 'high-performance'
@@ -729,28 +730,28 @@ function App() {
         <Stars radius={300} depth={60} count={5000} factor={13} saturation={0} fade speed={0} />
         <Environment preset="studio" background={false} />
         <Earth onClick={handleEarthClick} />
-        <Satellite 
-          onClick={handleSatelliteClick} 
-          orbitRef={satelliteRef} 
+        <Satellite
+          onClick={handleSatelliteClick}
+          orbitRef={satelliteRef}
           isSelected={selectedObject === 'satellite'}
           onHoverLabel={handleHoverLabel}
         />
-        <SpaceShuttle 
-          onClick={handleShuttleClick} 
-          orbitRef={shuttleRef} 
+        <SpaceShuttle
+          onClick={handleShuttleClick}
+          orbitRef={shuttleRef}
           isSelected={selectedObject === 'shuttle'}
           onHoverLabel={handleHoverLabel}
         />
-        <Moon 
-          onClick={handleMoonClick} 
-          orbitRef={moonRef} 
+        <Moon
+          onClick={handleMoonClick}
+          orbitRef={moonRef}
           isSelected={selectedObject === 'moon'}
           onHoverLabel={handleHoverLabel}
         />
-        <OrbitControls 
+        <OrbitControls
           ref={controlsRef}
-          enableZoom={true} 
-          enablePan={true} 
+          enableZoom={true}
+          enablePan={true}
           enableRotate={true}
           rotateSpeed={0.5}
           onStart={handleControlsStart}
@@ -758,7 +759,7 @@ function App() {
         />
         <InitialCameraDistance />
         <CameraController targetRef={targetRef} isFollowing={!!selectedObject} controlsRef={controlsRef} />
-        
+
       </Canvas>
       <Overlay
         selectedObject={selectedObject}
