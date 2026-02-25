@@ -755,6 +755,8 @@ function App() {
           enableRotate={true}
           rotateSpeed={0.5}
           onStart={handleControlsStart}
+          minDistance={12}
+          maxDistance={100}
           makeDefault
         />
         <InitialCameraDistance />
