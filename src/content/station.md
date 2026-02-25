@@ -1,75 +1,53 @@
 # FileSift
 
-**Local-first semantic file search powered by language models**
+**A fast, local-first, open-source utility that helps AI coding agents intelligently search and understand codebases.**
 
-FileSift is a local file indexing and search tool that enables natural-language search across a filesystem. Instead of relying on filenames or directory structure, FileSift indexes file *content* and allows users to find code, documents, data files, and images using semantic queries.
+FileSift is a AI-native utility designed to help humans and coding agents understand codebases. The project evolved from a generalized file search tool into a specialized, privacy-first developer tool. Instead of the slow, wasteful approach of generating LLM summaries for every file, FileSift now uses lightning-fast, code-specific embedding models (Jina AI Code Embeddings) to index source code directly.
 
-The project was built to solve a personal pain point — navigating a large, messy local filesystem — and evolved into a general-purpose, extensible retrieval system suitable for developer workflows and power users.
+Most importantly, it emphasizes complete privacy: all embeddings are generated on your machine, ensuring your code never leaves your local environment.
 
 ---
 
 ## What It Does
 
-* Indexes local directories using file-type–specific processors (code, documents, images, data files)
-* Supports **hybrid retrieval**, combining semantic vector search (FAISS) with keyword-based search (BM25)
-* Exposes a fast CLI with a background daemon to keep indexes hot in memory
-* Works with any **OpenAI-compatible inference provider**, enabling fully local or cloud-based execution
+* Indexes codebases using specialized code embeddings for high-quality semantic retrieval
+* Features a background daemon to keep indexes hot in memory
+* Supports searching a fast, "primitive" index while deep embedding jobs are actively running in the background
+* Ships with first-class support for spinning up an **MCP (Model Context Protocol) server**, giving coding agents immediate access to your codebase context
+* Can be installed directly as an **agent skill**
 
 Search queries like:
 
-> "authentication logic" or "images of charts"
+> "authentication logic for user login" or "database connection management"
 
-return results based on meaning rather than filename matching alone.
+return precise results based on the meaning of the code, which both developers and autonomous agents can effortlessly navigate.
 
 ---
 
 ## System Design
 
-FileSift is designed as a **local-first retrieval system** with an emphasis on responsiveness and low operational overhead:
+FileSift is designed as a retrieval system with an emphasis on speed, privacy, and agent interoperability.
 
-* **Indexing**: Files are chunked and embedded using lightweight embedding models chosen for a balance of speed and quality
-* **Storage**: Each indexed directory maintains its own `.filesift` store containing:
-
-  * A FAISS vector index for semantic search
-  * A BM25 index for lexical search
-  * Metadata for file tracking
-* **Search**:
-
-  * Queries are embedded using the same model
-  * Semantic and keyword results are combined using **Reciprocal Rank Fusion (RRF)** for improved relevance
-
-Hybrid retrieval was chosen to handle both fuzzy semantic queries and cases where users remember specific keywords or identifiers.
+* **Indexing**: Code is parsed, chunked, and embedded directly using Jina AI code embedding models. This replaces earlier workflows that relied on expensive LLM summarization.
+* **Storage**: Each indexed directory maintains its own `.filesift` store containing the necessary index layers.
+* **Daemonized Search**: 
+  * A background process keeps the indexes hot for near-instant retrieval.
+  * Users and agents can start searching the fast primitive index immediately without waiting for the full semantic index to finish building.
 
 ---
 
-## Performance & UX Considerations
+## Agent & UX Workflows
 
-* **Cold start latency**: ~6 seconds (loading indexes into memory)
-* **Warm search latency**: <1 second via a background daemon
-* **Daemon model**: Indexes are kept in memory to support rapid iterative searching, with automatic shutdown after a configurable inactivity window to limit memory usage
-
-This design reflects the assumption that users often perform multiple searches in short bursts when trying to locate files.
+* **Humans**: Exposes a fast CLI to intuitively query the codebase manually.
+* **Agents**: Includes a built-in MCP server that autonomous coding agents can connect to. This enables agents to perform semantic retrieval over an entire repository without needing to scrape or read every file individually.
 
 ---
 
-## File Processing Strategy
+## Technical & UX Considerations
 
-* **Code files**: Indexed with additional contextual instructions to help models better infer structure and intent
-* **Documents & data files**: Parsed and chunked for semantic retrieval
-* **Images**: Captioned using vision-language models and indexed via text embeddings
-* **Binary files**: Skipped entirely using a hardcoded allowlist of supported formats
-
-This approach keeps the system robust while avoiding costly or low-signal indexing paths.
-
----
-
-## Tradeoffs & Limitations
-
-* Image indexing can be slow when using larger vision-language models
-* Indexing speed is constrained by external inference latency and hardware
-* Deleted or renamed files currently require a full reindex (v0.1), with filesystem listeners planned for future versions
-
-These tradeoffs were made intentionally to keep the daemon lightweight and inference-provider–agnostic.
+* **Privacy First**: Complete isolation. By running the Jina embeddings locally, your codebase context is completely secure.
+* **Warm search latency**: <1 second via the background daemon.
+* **Graceful Search Degradation**: The ability to query an initial primitive index means you don't have to wait for large monolithic indexing jobs to finish before getting to work.
 
 ---
 
@@ -77,8 +55,7 @@ These tradeoffs were made intentionally to keep the daemon lightweight and infer
 
 FileSift prioritizes:
 
-* **Local execution** over hosted services
-* **Composable retrieval primitives** rather than monolithic AI agents
-* **Explicit performance tradeoffs** instead of hidden background costs
+* **Absolute Privacy**: Fully local execution over hosted third-party services.
+* **Agentic First-Class Support**: Building retrieval primitives specifically for LLM-based coding agents (MCP, Skills)—not just human eyeballs.
 
-The project is intended as a foundation for exploring local AI tooling, retrieval systems, and future agent-based workflows that operate directly over a user’s personal data.
+The project serves as a foundational tool for the next generation of AI-native developer workflows, bridging the gap between how humans and autonomous systems navigate deep codebase structures.
