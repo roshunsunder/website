@@ -206,7 +206,7 @@ function SpaceShuttle({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick
     if (isSelected) return // Disable hover when selected
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
-    onHoverLabel?.('Projects')
+    onHoverLabel?.('Synergy Interview')
   }
 
   const handlePointerOut = () => {
@@ -318,7 +318,7 @@ function SpaceStation({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick
     if (isSelected) return
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
-    onHoverLabel?.('Space Station')
+    onHoverLabel?.('FileSift')
   }
 
   const handlePointerOut = () => {
@@ -482,9 +482,9 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 // Labels and markdown content per selectable object (edit content here)
 const OBJECT_HEADERS: Record<'satellite' | 'shuttle' | 'moon' | 'station', string> = {
   satellite: 'Work Experience',
-  shuttle: 'Projects',
+  shuttle: 'Synergy Interview',
   moon: 'About Me',
-  station: 'Space Station',
+  station: 'FileSift',
 }
 
 const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon' | 'station', string> = {
