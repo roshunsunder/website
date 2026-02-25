@@ -292,7 +292,7 @@ function SpaceStation({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick
   const clonedScene = useMemo(() => scene.clone(), [scene])
   const stationGroupRef = useRef<Group>(null)
   const angleRef = useRef(Math.PI * 1.5) // Start at different position
-  const orbitRadius = 14
+  const orbitRadius = 13
   const orbitSpeed = 0.075
   const stationScale = 1
   const orbitTiltX = -0.8
@@ -307,8 +307,6 @@ function SpaceStation({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick
     orbitRef.current.position.x = x
     orbitRef.current.position.y = Math.sin(orbitTiltX) * z
     orbitRef.current.position.z = Math.cos(orbitTiltX) * z
-
-    stationGroupRef.current.rotation.y += delta * 0.2
   })
 
   const handleClick = (e: any) => {
