@@ -5,7 +5,7 @@ import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { Group } from 'three'
 import * as THREE from 'three'
-import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils'
+import { SkeletonUtils } from 'three-stdlib'
 import './App.css'
 
 import sceneGlb from './assets/models/scene.glb?url'
@@ -483,7 +483,7 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 const OBJECT_HEADERS: Record<'satellite' | 'shuttle' | 'moon' | 'station', string> = {
   satellite: 'Work Experience',
   shuttle: 'Synergy Interview',
-  moon: 'About Me',
+  moon: 'About Me / Contact',
   station: 'FileSift',
 }
 
