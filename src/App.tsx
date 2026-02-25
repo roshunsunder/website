@@ -265,7 +265,7 @@ function Moon({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => 
     if (isSelected) return
     e.stopPropagation()
     document.body.style.cursor = 'pointer'
-    onHoverLabel?.('About Me')
+    onHoverLabel?.('About Me / Contact')
   }
 
   const handlePointerOut = () => {

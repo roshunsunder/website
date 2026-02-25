@@ -6,3 +6,5 @@ Alongside my professional work, I build AI-powered systems that emphasize latenc
 I’m especially interested in the intersection of AI and systems engineering: how models behave under real constraints, how to serve them efficiently, and how to build infrastructure that makes AI features reliable in production. I care about clean abstractions, thoughtful tradeoffs, and tools that feel intuitive to use.
 
 If you’re building real products with AI and care about performance, reliability, and user experience, I’d love to talk!
+
+Feel free to reach out at roshun.sunder@gmail.com.
