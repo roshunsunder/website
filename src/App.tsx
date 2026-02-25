@@ -13,11 +13,13 @@ import satelliteGlb from './assets/models/low_poly_satellite.glb?url'
 import shuttleGlb from './assets/models/low-poly_space_shuttle.glb?url'
 import kerbalGlb from './assets/models/kerbal_eva_model.glb?url'
 import moonGlb from './assets/models/low_poly_moon.glb?url'
+import spaceStationGlb from './assets/models/low-poly_space_station.glb?url'
 import fontRegular from './assets/fonts/JetBrainsMono-Regular.ttf?url'
 
 import satelliteContent from './content/satellite.md?raw'
 import shuttleContent from './content/shuttle.md?raw'
 import moonContent from './content/moon.md?raw'
+import stationContent from './content/station.md?raw'
 
 // Preload all GLB models so they're cached before components mount
 useGLTF.preload(sceneGlb)
@@ -25,6 +27,7 @@ useGLTF.preload(satelliteGlb)
 useGLTF.preload(shuttleGlb)
 useGLTF.preload(kerbalGlb)
 useGLTF.preload(moonGlb)
+useGLTF.preload(spaceStationGlb)
 
 // Glow sphere component - creates the soft Gaussian glow around Earth
 function EarthGlow({ earthRadius = 8 }: { earthRadius?: number }) {
@@ -284,6 +287,57 @@ function Moon({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => 
   )
 }
 
+function SpaceStation({ onClick, orbitRef, isSelected, onHoverLabel }: { onClick: () => void, orbitRef: React.RefObject<Group | null>, isSelected: boolean, onHoverLabel?: (label: string | null) => void }) {
+  const { scene } = useGLTF(spaceStationGlb)
+  const clonedScene = useMemo(() => scene.clone(), [scene])
+  const stationGroupRef = useRef<Group>(null)
+  const angleRef = useRef(Math.PI * 1.5) // Start at different position
+  const orbitRadius = 14
+  const orbitSpeed = 0.075
+  const stationScale = 1
+  const orbitTiltX = -0.8
+
+  useFrame((_, delta) => {
+    if (!orbitRef.current || !stationGroupRef.current) return
+    angleRef.current += delta * orbitSpeed
+
+    const x = Math.cos(angleRef.current) * orbitRadius
+    const z = Math.sin(angleRef.current) * orbitRadius
+
+    orbitRef.current.position.x = x
+    orbitRef.current.position.y = Math.sin(orbitTiltX) * z
+    orbitRef.current.position.z = Math.cos(orbitTiltX) * z
+
+    stationGroupRef.current.rotation.y += delta * 0.2
+  })
+
+  const handleClick = (e: any) => {
+    e.stopPropagation()
+    onClick()
+  }
+
+  const handlePointerOver = (e: any) => {
+    if (isSelected) return
+    e.stopPropagation()
+    document.body.style.cursor = 'pointer'
+    onHoverLabel?.('Space Station')
+  }
+
+  const handlePointerOut = () => {
+    if (isSelected) return
+    document.body.style.cursor = 'auto'
+    onHoverLabel?.(null)
+  }
+
+  return (
+    <group ref={orbitRef} onClick={handleClick} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+      <group ref={stationGroupRef} scale={stationScale}>
+        <primitive object={clonedScene} />
+      </group>
+    </group>
+  )
+}
+
 // Viewport breakpoints for responsive camera/look-at behavior
 const VIEWPORT_WIDTH_FULL = 1200   // wide: use full offset / unchanged behavior
 const VIEWPORT_WIDTH_NARROW = 430  // narrow: reduce horizontal offset so object stays centered
@@ -428,16 +482,18 @@ function CameraController({ targetRef, isFollowing, controlsRef }: { targetRef: 
 }
 
 // Labels and markdown content per selectable object (edit content here)
-const OBJECT_HEADERS: Record<'satellite' | 'shuttle' | 'moon', string> = {
+const OBJECT_HEADERS: Record<'satellite' | 'shuttle' | 'moon' | 'station', string> = {
   satellite: 'Work Experience',
   shuttle: 'Projects',
   moon: 'About Me',
+  station: 'Space Station',
 }
 
-const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon', string> = {
+const OBJECT_CONTENT: Record<'satellite' | 'shuttle' | 'moon' | 'station', string> = {
   satellite: satelliteContent,
   shuttle: shuttleContent,
   moon: moonContent,
+  station: stationContent,
 }
 
 const DETAIL_PANEL_FADE_OUT_MS = 400
@@ -453,7 +509,7 @@ function DetailPanel({
   onClose,
   onClosingComplete,
 }: {
-  selectedObject: 'satellite' | 'shuttle' | 'moon'
+  selectedObject: 'satellite' | 'shuttle' | 'moon' | 'station'
   isClosing: boolean
   onClose: () => void
   onClosingComplete: () => void
@@ -506,8 +562,8 @@ function Overlay({
   onClose,
   onClosingComplete,
 }: {
-  selectedObject: 'satellite' | 'shuttle' | 'moon' | null
-  closingObject: 'satellite' | 'shuttle' | 'moon' | null
+  selectedObject: 'satellite' | 'shuttle' | 'moon' | 'station' | null
+  closingObject: 'satellite' | 'shuttle' | 'moon' | 'station' | null
   hoverLabelText: string | null
   isHoverLabelVisible: boolean
   onClose: () => void
@@ -585,14 +641,15 @@ function LoadingScreen({ phase }: { phase: LoadingPhase }) {
 }
 
 function App() {
-  const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
-  const [closingObject, setClosingObject] = useState<'satellite' | 'shuttle' | 'moon' | null>(null)
+  const [selectedObject, setSelectedObject] = useState<'satellite' | 'shuttle' | 'moon' | 'station' | null>(null)
+  const [closingObject, setClosingObject] = useState<'satellite' | 'shuttle' | 'moon' | 'station' | null>(null)
   const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
   const [displayedLabel, setDisplayedLabel] = useState<string | null>(null)
   const [loadingPhase, setLoadingPhase] = useState<LoadingPhase>('visible')
   const satelliteRef = useRef<Group>(null)
   const shuttleRef = useRef<Group>(null)
   const moonRef = useRef<Group>(null)
+  const stationRef = useRef<Group>(null)
   const controlsRef = useRef<any>(null)
   const hoverLabelTimeoutRef = useRef<number | null>(null)
   const labelFadeOutTimeoutRef = useRef<number | null>(null)
@@ -692,6 +749,10 @@ function App() {
     setSelectedObject(selectedObject === 'moon' ? null : 'moon')
   }
 
+  const handleStationClick = () => {
+    setSelectedObject(selectedObject === 'station' ? null : 'station')
+  }
+
   const handleEarthClick = () => {
     // Clicking Earth deselects any selected object (with panel fade-out)
     closePanel()
@@ -713,7 +774,8 @@ function App() {
     selectedObject === 'satellite' ? satelliteRef
       : selectedObject === 'shuttle' ? shuttleRef
         : selectedObject === 'moon' ? moonRef
-          : null
+          : selectedObject === 'station' ? stationRef
+            : null
 
   return (
     <div className="canvas-container">
@@ -746,6 +808,12 @@ function App() {
           onClick={handleMoonClick}
           orbitRef={moonRef}
           isSelected={selectedObject === 'moon'}
+          onHoverLabel={handleHoverLabel}
+        />
+        <SpaceStation
+          onClick={handleStationClick}
+          orbitRef={stationRef}
+          isSelected={selectedObject === 'station'}
           onHoverLabel={handleHoverLabel}
         />
         <OrbitControls
